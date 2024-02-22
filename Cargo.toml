@@ -1,3 +1,12 @@
 [workspace]
 resolver = "2"
 members = ["fc-search", "frontend"]
+
+[profile.dev]
+debug = 0
+strip = "debuginfo"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 'z'
