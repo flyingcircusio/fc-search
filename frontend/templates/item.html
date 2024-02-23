@@ -1,0 +1,15 @@
+{% for item in results %}
+<li class="my-4">
+    <div>Name: {{ item.name }}</div>
+    <div>Description: {{ item.description }}</div>
+
+    <div>
+        Declared in:
+        <ul>
+        {% for s in item.declarations %}
+            <li>{{- loop.index0 }}. {{ s }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+</li>
+{% endfor %}

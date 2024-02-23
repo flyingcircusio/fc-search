@@ -2,14 +2,29 @@
 <html lang="en">
     <head>
         <link href="/assets/tailwind.css" rel="stylesheet" />
-        <link href="https://rsms.me/inter/inter.css" rel="stylesheet" />
         <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
-
-        <title>Hi, World!</title>
+        <title>FC-Search</title>
     </head>
     <body>
-        <h1 class="flex">
-            Hello, {{ name }}!
-        </h1>
+        <div class="flex justify-center my-10">
+            <h1 class="text-6xl">
+                Search NixOS Options
+            </h1>
+        </div>
+
+        <div class="flex justify-center w-full">
+            <form>
+                <input
+                    type="search" name="q" placeholder="begin typing to search..."
+                    hx-get="/search" hx-trigger="input changed delay:500ms, search"
+                    hx-target="#search-results"
+                />
+            </form>
+        </div>
+
+        <div class="flex justify-center w-full">
+            <ul id="search-results">
+            </ul>
+        </div>
     </body>
 </html>

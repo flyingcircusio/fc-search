@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub enum ExpressionType {
     #[serde(rename = "literalExpression")]
     LiteralExpression,
@@ -8,14 +8,15 @@ pub enum ExpressionType {
     LiteralMd,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Expression {
     #[serde(rename = "_type")]
     pub option_type: ExpressionType,
     pub text: String,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+// TODO include name during deserialization from hashmap
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct NixosOption {
     pub declarations: Vec<String>,
     pub default: Option<Expression>,
