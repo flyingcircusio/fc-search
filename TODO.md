@@ -8,5 +8,6 @@
 
 - datastore
     - fetch data from json initially
-    - store in sqlite?
-    - elasticsearch?
+    - tantivy
+        - try to index all channels
+        - generate overview buttons for channel selection from successfully indexed channels
