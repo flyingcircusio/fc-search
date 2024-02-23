@@ -1,3 +1,5 @@
+pub mod search;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
@@ -16,7 +18,7 @@ pub struct Expression {
 }
 
 // TODO include name during deserialization from hashmap
-#[derive(Deserialize, Debug, Serialize, Clone)]
+#[derive(Deserialize, Debug, Serialize, Clone, Default)]
 pub struct NixosOption {
     pub declarations: Vec<String>,
     pub default: Option<Expression>,

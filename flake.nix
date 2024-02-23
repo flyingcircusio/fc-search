@@ -57,58 +57,29 @@
 
           nci = {
             toolchainConfig = ./rust-toolchain.toml;
-            projects."fc-search" = {
-              path = ./.;
-              export = true;
-            };
+            projects."fc-search".path = ./.;
             crates."fc-search" = {
               export = true;
               drvConfig.mkDerivation = {
-                nativeBuildInputs =
-                  [ pkgs.sqlx-cli pkgs.tailwindcss pkgs.pkg-config ];
-                preBuild = ''
-                  export DATABASE_URL=sqlite:./db.sqlite3
-                  sqlx database create
-                  sqlx migrate run
-                '';
+                nativeBuildInputs = [ pkgs.tailwindcss pkgs.pkg-config ];
                 buildInputs = [ pkgs.openssl ]
                   ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
                   (with pkgs.darwin.apple_sdk.frameworks;
                     [ SystemConfiguration ]);
               };
             };
-            crates."frontend".export = false;
           };
 
           devShells.default =
-            config.nci.outputs."fc-search".devShell.overrideAttrs (old:
-              {
-                DATABASE_URL = "sqlite:test.db";
-                packages = (old.packages or [ ]) ++ [
-                  pkgs.bacon
-                  pkgs.samply
-                  pkgs.sqlx-cli
-                  pkgs.tailwindcss
-                  pkgs.sqlitebrowser
-
-                  pkgs.trunk
-                  pkgs.wasm-bindgen-cli
-                  pkgs.dart-sass
-                  pkgs.cargo-leptos
-                ];
-                shellHook = ''
-                  ${old.shellHook or ""}
-                  ${config.pre-commit.installationScript}
-                '';
-              } // (pkgs.lib.optionalAttrs (system == "aarch64-linux") {
-                # LD_LIBRARY_PATH = "$LD_LIBRARY_PATH:${
-                #    builtins.toString
-                #    (pkgs.lib.makeLibraryPath [ pkgs.openssl ])
-                #  }";
-                # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER =
-                #  "${pkgs.llvmPackages.clangUseLLVM}/bin/clang";
-                # RUSTFLAGS = "-Clink-arg=-fuse-ld=${pkgs.mold}/bin/mold";
-              }));
+            config.nci.outputs."fc-search".devShell.overrideAttrs (old: {
+              DATABASE_URL = "sqlite:test.db";
+              packages = (old.packages or [ ])
+                ++ [ pkgs.bacon pkgs.samply pkgs.tailwindcss pkgs.drill ];
+              shellHook = ''
+                ${old.shellHook or ""}
+                ${config.pre-commit.installationScript}
+              '';
+            });
         };
     };
 }

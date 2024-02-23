@@ -1,0 +1,13 @@
+concurrency: 4
+base: 'http://localhost:8000'
+iterations: 5000
+rampup: 2
+
+plan:
+  - name: Fetch overview
+    request:
+      url: /
+
+  - name: Search something
+    request:
+      url: /search?q=nginx

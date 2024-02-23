@@ -7,7 +7,10 @@
     - backend via templates (askama)
 
 - datastore
-    - fetch data from json initially
     - tantivy
         - try to index all channels
         - generate overview buttons for channel selection from successfully indexed channels
+    - reindex regularly (1/day at night?)
+        - get newest evaluations for "fc-" jobs from hydra
+        - try to generate options from those
+        - index them
