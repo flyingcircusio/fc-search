@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{Schema, STORED, TEXT};
+use tantivy::schema::{Schema, FAST, STORED, TEXT};
 use tantivy::{Document, Index};
 
 pub fn create_index(index_path: &PathBuf) -> tantivy::Result<()> {
     let mut schema_builder = Schema::builder();
 
-    schema_builder.add_text_field("name", TEXT | STORED);
+    schema_builder.add_text_field("name", TEXT | STORED | FAST);
     schema_builder.add_text_field("description", TEXT);
     schema_builder.add_text_field("default", TEXT);
 

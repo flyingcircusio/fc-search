@@ -13,8 +13,9 @@
         </div>
 
         <div class="flex justify-center w-full">
-            <form>
+            <form class="w-1/2 flex justify-center">
                 <input
+                    class="rounded-full grow px-3 py-2"
                     type="search" name="q" placeholder="begin typing to search..."
                     hx-get="/search" hx-trigger="input changed delay:200ms, search"
                     hx-target="#search-results"
@@ -22,9 +23,11 @@
             </form>
         </div>
 
-        <div class="flex justify-center w-full">
-            <ul id="search-results">
-            </ul>
+        <div class="flex justify-center p-4">
+            <div class="flex justify-center w-2/3">
+                <ul class="grow" id="search-results">
+                </ul>
+            </div>
         </div>
     </body>
 </html>

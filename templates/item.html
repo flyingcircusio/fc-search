@@ -1,13 +1,17 @@
 {% for item in results %}
-<li class="my-4">
-    <div>Name: {{ item.name }}</div>
-    <div>Description: {{ item.description }}</div>
+<li class="my-4 p-2 border border-2 rounded">
+
+    <p class="font-bold py-1">{{ item.name }}</p>
+
+    <p>{{ item.description }}</p>
+
+    <p>Default: `{{item.default}}`</p>
 
     <div>
         Declared in:
         <ul>
         {% for s in item.declarations %}
-            <li>{{- loop.index0 }}. {{ s }}</li>
+            <li>{{ s }}</li>
         {% endfor %}
         </ul>
     </div>
