@@ -104,6 +104,7 @@ impl AppState {
         let mut query_parser = QueryParser::for_index(&index, vec![name, description, default]);
         query_parser.set_field_fuzzy(name, true, 2, false);
         query_parser.set_field_boost(name, 5.0);
+        query_parser.set_conjunction_by_default();
 
         channels.insert(
             "flake2.0".to_string(),
