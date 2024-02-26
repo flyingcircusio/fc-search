@@ -60,6 +60,10 @@
             projects."fc-search".path = ./.;
             crates."fc-search" = {
               export = true;
+              depsDrvConfig.mkDerivation = {
+                nativeBuildInputs = [ pkgs.pkg-config ];
+                buildInputs = [ pkgs.openssl ];
+              };
               drvConfig.mkDerivation = {
                 nativeBuildInputs = [ pkgs.tailwindcss pkgs.pkg-config ];
                 buildInputs = [ pkgs.openssl ]
