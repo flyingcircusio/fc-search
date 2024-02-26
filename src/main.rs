@@ -4,8 +4,8 @@ use anyhow::Context;
 use askama::Template;
 use axum::{
     extract::State,
-    http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    http::{HeaderMap, StatusCode},
+    response::{Html, IntoResponse, Redirect, Response},
     routing::get,
     Router,
 };
@@ -44,6 +44,19 @@ struct ChannelSearcher {
     query_parser: QueryParser,
     searcher: Searcher,
     schema: Schema,
+}
+
+// TODO adjust after testing
+fn default_channel() -> String {
+    "flake2.0".to_string()
+}
+
+#[derive(Deserialize, Debug)]
+struct SearchForm {
+    #[serde(default)]
+    q: String,
+    #[serde(default = "default_channel")]
+    channel: String,
 }
 
 impl AppState {
@@ -230,35 +243,70 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn index_handler(State(state): State<AppState>) -> impl IntoResponse {
-    HtmlTemplate(IndexTemplate {
-        branches: state.channels.keys().sorted().cloned().collect_vec(),
-    })
-}
-
-// TODO adjust after testing
-fn default_channel() -> String {
-    "flake2.0".to_string()
-}
-
-#[derive(Deserialize, Debug)]
-struct SearchForm {
-    q: String,
-    #[serde(default = "default_channel")]
-    channel: String,
+async fn index_handler() -> impl IntoResponse {
+    Redirect::permanent("/search").into_response()
 }
 
 #[tracing::instrument(skip(state))]
 async fn search_handler(
     State(state): State<AppState>,
+    headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
     debug!("item handler");
 
+    if headers.contains_key("HX-Request") {
+        let results = get_results(&form, &state);
+        let template = ItemTemplate { results };
+        HtmlTemplate(template).into_response()
+    } else {
+        let branches = state.channels.keys().sorted().cloned().collect_vec();
+        let results = get_results(&form, &state);
+        HtmlTemplate(IndexTemplate {
+            branches,
+            results,
+            search_value: form.q.clone(),
+        })
+        .into_response()
+    }
+}
+
+#[derive(Template)]
+#[template(path = "index.html")]
+struct IndexTemplate<'a> {
+    branches: Vec<String>,
+    results: Vec<&'a NaiveNixosOption>,
+    search_value: String,
+}
+
+#[derive(Template)]
+#[template(path = "item.html")]
+struct ItemTemplate<'a> {
+    results: Vec<&'a NaiveNixosOption>,
+}
+
+struct HtmlTemplate<T>(T);
+
+impl<T> IntoResponse for HtmlTemplate<T>
+where
+    T: Template,
+{
+    fn into_response(self) -> Response {
+        match self.0.render() {
+            Ok(html) => Html(html).into_response(),
+            Err(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to render template. Error: {}", err),
+            )
+                .into_response(),
+        }
+    }
+}
+
+fn get_results<'a>(form: &SearchForm, state: &'a AppState) -> Vec<&'a NaiveNixosOption> {
     // return nothing if channel not found
-    // TODO: custom error that implements response with empty body for all unwraps below
     let Some(channel) = state.channels.get(&form.channel) else {
-        return HtmlTemplate(ItemTemplate { results: vec![] }).into_response();
+        return Vec::new();
     };
 
     let query = channel.query_parser.parse_query(&form.q).unwrap();
@@ -291,36 +339,5 @@ async fn search_handler(
         })
         .collect();
 
-    let template = ItemTemplate { results };
-    HtmlTemplate(template).into_response()
-}
-
-#[derive(Template)]
-#[template(path = "index.html")]
-struct IndexTemplate {
-    branches: Vec<String>,
-}
-
-#[derive(Template)]
-#[template(path = "item.html")]
-struct ItemTemplate<'a> {
-    results: Vec<&'a NaiveNixosOption>,
-}
-
-struct HtmlTemplate<T>(T);
-
-impl<T> IntoResponse for HtmlTemplate<T>
-where
-    T: Template,
-{
-    fn into_response(self) -> Response {
-        match self.0.render() {
-            Ok(html) => Html(html).into_response(),
-            Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to render template. Error: {}", err),
-            )
-                .into_response(),
-        }
-    }
+    results
 }

@@ -16,11 +16,13 @@
             <form class="grow flex flex-col justify-center items-center"
                 hx-get="/search"
                 hx-trigger="input changed delay:200ms from:#search-input, search from:#search-input, change from:#channel"
+                hx-push-url="true"
                 hx-target="#search-results">
 
                 <input
                     class="rounded-full px-3 py-2 w-1/2" id="search-input"
                     type="search" name="q" placeholder="begin typing to search..."
+                    value="{{search_value}}"
                 />
 
                 <div class="p-3">
@@ -37,6 +39,7 @@
         <div class="flex justify-center p-4">
             <div class="flex justify-center w-2/3">
                 <ul class="grow" id="search-results">
+                    {% include "item.html" %}
                 </ul>
             </div>
         </div>
