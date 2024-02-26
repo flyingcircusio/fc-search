@@ -13,13 +13,24 @@
         </div>
 
         <div class="flex justify-center w-full">
-            <form class="w-1/2 flex justify-center">
+            <form class="grow flex flex-col justify-center items-center"
+                hx-get="/search"
+                hx-trigger="input changed delay:200ms from:#search-input, search from:#search-input, change from:#channel"
+                hx-target="#search-results">
+
                 <input
-                    class="rounded-full grow px-3 py-2"
+                    class="rounded-full px-3 py-2 w-1/2" id="search-input"
                     type="search" name="q" placeholder="begin typing to search..."
-                    hx-get="/search" hx-trigger="input changed delay:200ms, search"
-                    hx-target="#search-results"
                 />
+
+                <div class="p-3">
+                    <label for="channel">Channel:</label>
+                    <select name="channel" id="channel">
+                        {% for branch in branches %}
+                        <option value="{{branch}}">{{branch}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </form>
         </div>
 

@@ -9,14 +9,16 @@ use axum::{
     routing::get,
     Router,
 };
+use itertools::Itertools;
 use tantivy::{collector::TopDocs, query::QueryParser, schema::Schema, Index, Searcher};
 use tower_http::services::ServeDir;
 use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use fc_search::{
+    build_options_for_input, get_fcio_flake_uris,
     search::{create_index, write_entries},
-    NixosOption,
+    Flake,
 };
 
 use serde::Deserialize;
@@ -45,15 +47,92 @@ struct ChannelSearcher {
 }
 
 impl AppState {
-    // TODO error handling
-    fn trivial() -> Self {
+    fn test() -> Self {
         let mut channels = HashMap::new();
 
-        for _channel in ["latest"] {
+        let index_path = TempDir::new().unwrap().into_path();
+        let options: HashMap<String, fc_search::NixosOption> =
+            serde_json::from_str(&std::fs::read_to_string("out.json").unwrap()).unwrap();
+
+        create_index(&index_path).unwrap();
+        write_entries(&index_path, &options).unwrap();
+
+        let mut naive_options = HashMap::new();
+        for (name, option) in options.into_iter() {
+            naive_options.insert(
+                name.clone(),
+                NaiveNixosOption {
+                    name,
+                    description: option.description.clone().unwrap_or_default(),
+                    declarations: option.declarations.clone(),
+                    default: option.default.clone().map(|e| e.text).unwrap_or_default(),
+                },
+            );
+        }
+
+        // ----------------------
+
+        let index = Index::open_in_dir(&index_path).unwrap();
+        let schema = index.schema();
+        let name = schema.get_field("name").expect("the field should exist");
+        let description = schema
+            .get_field("description")
+            .expect("the field should exist");
+
+        let default = schema.get_field("default").expect("the field should exist");
+
+        let reader = index
+            .reader_builder()
+            .reload_policy(tantivy::ReloadPolicy::OnCommit)
+            .try_into()
+            .unwrap();
+
+        let searcher = reader.searcher();
+        let mut query_parser = QueryParser::for_index(&index, vec![name, description, default]);
+        query_parser.set_field_fuzzy(name, true, 2, false);
+        query_parser.set_field_boost(name, 5.0);
+
+        channels.insert(
+            "flake2.0".to_string(),
+            ChannelSearcher {
+                options: naive_options,
+                query_parser,
+                searcher,
+                schema,
+            },
+        );
+
+        Self {
+            channels: Arc::new(channels),
+        }
+    }
+
+    // TODO error handling
+    #[allow(dead_code)]
+    async fn trivial() -> Self {
+        //let uris = get_fcio_flake_uris().await.unwrap();
+        let uris = vec![Flake {
+            owner: "PhilTaken".to_string(),
+            name: "fc-nixos".to_string(),
+            branch: "flake2.0".to_string(),
+        }];
+
+        println!(
+            "building options for branches: {:#?}",
+            uris.iter().map(|u| u.branch.clone()).collect_vec()
+        );
+
+        let mut channels = HashMap::new();
+
+        for uri in uris {
             let index_path = TempDir::new().unwrap().into_path();
-            // TODO generate + read channel options
-            let options: HashMap<String, NixosOption> =
-                serde_json::from_str(&std::fs::read_to_string("out.json").unwrap()).unwrap();
+            let Some(options) = build_options_for_input(&uri.flake_uri()) else {
+                println!(
+                    "failed to build options for branch {}, skipping",
+                    uri.branch
+                );
+                continue;
+            };
 
             create_index(&index_path).unwrap();
             write_entries(&index_path, &options).unwrap();
@@ -94,7 +173,7 @@ impl AppState {
             query_parser.set_field_boost(name, 5.0);
 
             channels.insert(
-                "latest".to_string(),
+                uri.branch,
                 ChannelSearcher {
                     options: naive_options,
                     query_parser,
@@ -122,7 +201,9 @@ async fn main() -> anyhow::Result<()> {
 
     info!("initializing router...");
 
-    let state = AppState::trivial();
+    let state = AppState::test();
+    //let state = AppState::trivial().await;
+
     let assets_path = std::env::current_dir().unwrap();
     let port = 8000_u16;
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
@@ -149,12 +230,15 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn index_handler(State(_state): State<AppState>) -> impl IntoResponse {
-    HtmlTemplate(IndexTemplate)
+async fn index_handler(State(state): State<AppState>) -> impl IntoResponse {
+    HtmlTemplate(IndexTemplate {
+        branches: state.channels.keys().sorted().cloned().collect_vec(),
+    })
 }
 
+// TODO adjust after testing
 fn default_channel() -> String {
-    "latest".to_string()
+    "flake2.0".to_string()
 }
 
 #[derive(Deserialize, Debug)]
@@ -171,8 +255,11 @@ async fn search_handler(
 ) -> impl IntoResponse {
     debug!("item handler");
 
-    // TODO error handling
-    let channel = state.channels.get(&form.channel).unwrap();
+    // return nothing if channel not found
+    // TODO: custom error that implements response with empty body for all unwraps below
+    let Some(channel) = state.channels.get(&form.channel) else {
+        return HtmlTemplate(ItemTemplate { results: vec![] }).into_response();
+    };
 
     let query = channel.query_parser.parse_query(&form.q).unwrap();
     let top_docs = channel
@@ -196,7 +283,12 @@ async fn search_handler(
                 .expect("value is text")
                 .to_string()
         })
-        .map(|name| channel.options.get(&name).unwrap())
+        .map(|name| {
+            channel
+                .options
+                .get(&name)
+                .expect("found option exists in hashmap")
+        })
         .collect();
 
     let template = ItemTemplate { results };
@@ -205,7 +297,9 @@ async fn search_handler(
 
 #[derive(Template)]
 #[template(path = "index.html")]
-struct IndexTemplate;
+struct IndexTemplate {
+    branches: Vec<String>,
+}
 
 #[derive(Template)]
 #[template(path = "item.html")]
