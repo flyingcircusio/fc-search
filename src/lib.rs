@@ -111,7 +111,7 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
 
         let (repo, branch) = fc
             .value
-            .split_once(" ")
+            .split_once(' ')
             .expect("value has scheme `uri branch`");
 
         // TODO error handling?

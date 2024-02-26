@@ -1,17 +1,17 @@
+use rust_embed::RustEmbed;
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context;
 use askama::Template;
 use axum::{
     extract::State,
-    http::{HeaderMap, StatusCode},
+    http::{header, HeaderMap, StatusCode, Uri},
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
     Router,
 };
 use itertools::Itertools;
 use tantivy::{collector::TopDocs, query::QueryParser, schema::Schema, Index, Searcher};
-use tower_http::services::ServeDir;
 use tracing::{debug, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -85,7 +85,7 @@ impl AppState {
 
         // ----------------------
 
-        let index = Index::open_in_dir(&index_path).unwrap();
+        let index = Index::open_in_dir(index_path).unwrap();
         let schema = index.schema();
         let name = schema.get_field("name").expect("the field should exist");
         let description = schema
@@ -214,21 +214,20 @@ async fn main() -> anyhow::Result<()> {
 
     info!("initializing router...");
 
-    let state = AppState::test();
-    //let state = AppState::trivial().await;
+    let state = if cfg!(debug_assertions) {
+        AppState::test()
+    } else {
+        AppState::trivial().await
+    };
 
-    let assets_path = std::env::current_dir().unwrap();
     let port = 8000_u16;
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
 
     let router = Router::new()
         .route("/", get(index_handler))
         .route("/search", get(search_handler))
-        .with_state(state)
-        .nest_service(
-            "/assets",
-            ServeDir::new(format!("{}/assets", assets_path.to_str().unwrap())),
-        );
+        .route("/assets/*file", get(static_handler))
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!(
@@ -268,6 +267,39 @@ async fn search_handler(
             search_value: form.q.clone(),
         })
         .into_response()
+    }
+}
+
+async fn static_handler(uri: Uri) -> impl IntoResponse {
+    let mut path = uri.path().trim_start_matches('/').to_string();
+
+    if path.starts_with("assets/") {
+        path = path.replace("assets/", "");
+    }
+
+    StaticFile(path)
+}
+
+#[derive(RustEmbed)]
+#[folder = "assets/"]
+struct Asset;
+
+pub struct StaticFile<T>(pub T);
+
+impl<T> IntoResponse for StaticFile<T>
+where
+    T: Into<String>,
+{
+    fn into_response(self) -> Response {
+        let path = self.0.into();
+
+        match Asset::get(path.as_str()) {
+            Some(content) => {
+                let mime = mime_guess::from_path(path).first_or_octet_stream();
+                ([(header::CONTENT_TYPE, mime.as_ref())], content.data).into_response()
+            }
+            None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
+        }
     }
 }
 

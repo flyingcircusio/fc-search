@@ -15,7 +15,7 @@ pub fn create_index(index_path: &PathBuf) -> tantivy::Result<()> {
 
     let schema = schema_builder.build();
 
-    Index::create_in_dir(&index_path, schema.clone())?;
+    Index::create_in_dir(index_path, schema.clone())?;
     Ok(())
 }
 
@@ -23,7 +23,7 @@ pub fn write_entries(
     index_path: &PathBuf,
     entries: &HashMap<String, NixosOption>,
 ) -> tantivy::Result<()> {
-    let index = Index::open_in_dir(&index_path)?;
+    let index = Index::open_in_dir(index_path)?;
     let schema = index.schema();
 
     let mut index_writer = index.writer(50_000_000)?;
@@ -50,7 +50,7 @@ pub fn write_entries(
 }
 
 pub fn search_entries(index_path: &PathBuf, query: String) -> tantivy::Result<Vec<String>> {
-    let index = Index::open_in_dir(&index_path)?;
+    let index = Index::open_in_dir(index_path)?;
     let schema = index.schema();
     let name = schema.get_field("name").expect("the field should exist");
     let description = schema
