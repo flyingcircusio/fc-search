@@ -3,15 +3,30 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{Schema, FAST, STORED, TEXT};
+use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, STORED, TEXT};
 use tantivy::{Document, Index};
 
 pub fn create_index(index_path: &PathBuf) -> tantivy::Result<()> {
     let mut schema_builder = Schema::builder();
 
-    schema_builder.add_text_field("name", TEXT | STORED | FAST);
+    let raw_stored = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer("raw")
+                .set_index_option(tantivy::schema::IndexRecordOption::WithFreqsAndPositions),
+        )
+        .set_stored();
+
+    let raw_unstored = TextOptions::default().set_indexing_options(
+        TextFieldIndexing::default()
+            .set_tokenizer("raw")
+            .set_index_option(tantivy::schema::IndexRecordOption::WithFreqsAndPositions),
+    );
+
+    schema_builder.add_text_field("original_name", raw_stored);
+    schema_builder.add_text_field("name", TEXT);
     schema_builder.add_text_field("description", TEXT);
-    schema_builder.add_text_field("default", TEXT);
+    schema_builder.add_text_field("default", raw_unstored);
 
     let schema = schema_builder.build();
 
@@ -28,15 +43,23 @@ pub fn write_entries(
 
     let mut index_writer = index.writer(50_000_000)?;
 
-    let name = schema.get_field("name").expect("the field should exist");
+    let name = schema
+        .get_field("name")
+        .expect("the field name should exist");
+    let original_name = schema
+        .get_field("original_name")
+        .expect("the field original_name should exist");
     let description = schema
         .get_field("description")
-        .expect("the field should exist");
-    let default = schema.get_field("default").expect("the field should exist");
+        .expect("the description field should exist");
+    let default = schema
+        .get_field("default")
+        .expect("the field default should exist");
 
     for (option_name, option) in entries {
         let mut document = Document::default();
-        document.add_text(name, option_name.clone());
+        document.add_text(original_name, option_name.clone());
+        document.add_text(name, option_name.clone().replace(".", " "));
         document.add_text(description, option.description.clone().unwrap_or_default());
         document.add_text(
             default,

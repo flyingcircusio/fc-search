@@ -18,7 +18,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use fc_search::{
     build_options_for_input, get_fcio_flake_uris,
     search::{create_index, write_entries},
-    Flake,
+    Flake, NixosOption,
 };
 
 use serde::Deserialize;
@@ -60,94 +60,11 @@ struct SearchForm {
 }
 
 impl AppState {
-    fn test() -> Self {
+    fn with_options(channel_options: HashMap<String, HashMap<String, NixosOption>>) -> Self {
         let mut channels = HashMap::new();
 
-        let index_path = TempDir::new().unwrap().into_path();
-        let options: HashMap<String, fc_search::NixosOption> =
-            serde_json::from_str(&std::fs::read_to_string("out.json").unwrap()).unwrap();
-
-        create_index(&index_path).unwrap();
-        write_entries(&index_path, &options).unwrap();
-
-        let mut naive_options = HashMap::new();
-        for (name, option) in options.into_iter() {
-            naive_options.insert(
-                name.clone(),
-                NaiveNixosOption {
-                    name,
-                    description: option.description.clone().unwrap_or_default(),
-                    declarations: option.declarations.clone(),
-                    default: option.default.clone().map(|e| e.text).unwrap_or_default(),
-                },
-            );
-        }
-
-        // ----------------------
-
-        let index = Index::open_in_dir(index_path).unwrap();
-        let schema = index.schema();
-        let name = schema.get_field("name").expect("the field should exist");
-        let description = schema
-            .get_field("description")
-            .expect("the field should exist");
-
-        let default = schema.get_field("default").expect("the field should exist");
-
-        let reader = index
-            .reader_builder()
-            .reload_policy(tantivy::ReloadPolicy::OnCommit)
-            .try_into()
-            .unwrap();
-
-        let searcher = reader.searcher();
-        let mut query_parser = QueryParser::for_index(&index, vec![name, description, default]);
-        query_parser.set_field_fuzzy(name, true, 2, false);
-        query_parser.set_field_boost(name, 5.0);
-        query_parser.set_conjunction_by_default();
-
-        channels.insert(
-            "flake2.0".to_string(),
-            ChannelSearcher {
-                options: naive_options,
-                query_parser,
-                searcher,
-                schema,
-            },
-        );
-
-        Self {
-            channels: Arc::new(channels),
-        }
-    }
-
-    // TODO error handling
-    #[allow(dead_code)]
-    async fn trivial() -> Self {
-        //let uris = get_fcio_flake_uris().await.unwrap();
-        let uris = vec![Flake {
-            owner: "PhilTaken".to_string(),
-            name: "fc-nixos".to_string(),
-            branch: "flake2.0".to_string(),
-        }];
-
-        println!(
-            "building options for branches: {:#?}",
-            uris.iter().map(|u| u.branch.clone()).collect_vec()
-        );
-
-        let mut channels = HashMap::new();
-
-        for uri in uris {
+        for (branch_name, options) in channel_options {
             let index_path = TempDir::new().unwrap().into_path();
-            let Some(options) = build_options_for_input(&uri.flake_uri()) else {
-                println!(
-                    "failed to build options for branch {}, skipping",
-                    uri.branch
-                );
-                continue;
-            };
-
             create_index(&index_path).unwrap();
             write_entries(&index_path, &options).unwrap();
 
@@ -168,13 +85,12 @@ impl AppState {
 
             let index = Index::open_in_dir(&index_path).unwrap();
             let schema = index.schema();
-            let name = schema.get_field("name").expect("the field should exist");
             let description = schema
                 .get_field("description")
-                .expect("the field should exist");
-
-            let default = schema.get_field("default").expect("the field should exist");
-
+                .expect("the field description should exist");
+            let name = schema
+                .get_field("name")
+                .expect("the field name should exist");
             let reader = index
                 .reader_builder()
                 .reload_policy(tantivy::ReloadPolicy::OnCommit)
@@ -182,12 +98,12 @@ impl AppState {
                 .unwrap();
 
             let searcher = reader.searcher();
-            let mut query_parser = QueryParser::for_index(&index, vec![name, description, default]);
-            query_parser.set_field_fuzzy(name, true, 2, false);
-            query_parser.set_field_boost(name, 5.0);
+            let mut query_parser = QueryParser::for_index(&index, vec![name, description]);
+            query_parser.set_field_fuzzy(name, true, 1, false);
+            query_parser.set_field_boost(name, 3.0);
 
             channels.insert(
-                uri.branch,
+                branch_name,
                 ChannelSearcher {
                     options: naive_options,
                     query_parser,
@@ -200,6 +116,53 @@ impl AppState {
         Self {
             channels: Arc::new(channels),
         }
+    }
+
+    fn test() -> Self {
+        let index_path = TempDir::new().unwrap().into_path();
+        let options: HashMap<String, fc_search::NixosOption> = serde_json::from_str(
+            &std::fs::read_to_string("out.json")
+                .expect("unable to read 'out.json', please generate it first"),
+        )
+        .expect("unable to parse 'out.json'");
+
+        create_index(&index_path).unwrap();
+        write_entries(&index_path, &options).unwrap();
+
+        let mut channels = HashMap::new();
+        channels.insert("flake2.0".to_string(), options);
+        Self::with_options(channels)
+    }
+
+    // TODO error handling
+    #[allow(dead_code)]
+    async fn trivial() -> Self {
+        //let uris = get_fcio_flake_uris().await.unwrap();
+        let uris = vec![Flake {
+            owner: "PhilTaken".to_string(),
+            name: "fc-nixos".to_string(),
+            branch: "flake2.0".to_string(),
+        }];
+
+        println!(
+            "building options for branches: {:#?}",
+            uris.iter().map(|u| u.branch.clone()).collect_vec()
+        );
+
+        let mut all_options = HashMap::new();
+
+        for uri in uris {
+            if let Some(options) = build_options_for_input(&uri.flake_uri()) {
+                all_options.insert(uri.branch, options);
+            } else {
+                println!(
+                    "failed to build options for branch {}, skipping",
+                    uri.branch
+                );
+            }
+        }
+
+        Self::with_options(all_options)
     }
 }
 
@@ -342,15 +305,18 @@ fn get_results<'a>(form: &SearchForm, state: &'a AppState) -> Vec<&'a NaiveNixos
         return Vec::new();
     };
 
-    let query = channel.query_parser.parse_query(&form.q).unwrap();
+    let query = channel.query_parser.parse_query_lenient(&form.q).0;
+
+    dbg!(&query);
+
     let top_docs = channel
         .searcher
-        .search(&query, &TopDocs::with_limit(10))
+        .search(&query, &TopDocs::with_limit(30))
         .unwrap();
 
     let name = channel
         .schema
-        .get_field("name")
+        .get_field("original_name")
         .expect("schema has field name");
 
     let results: Vec<&NaiveNixosOption> = top_docs
