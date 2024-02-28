@@ -30,6 +30,9 @@ struct NaiveNixosOption {
     declarations: Vec<String>,
     description: String,
     default: String,
+    example: String,
+    option_type: String,
+    read_only: bool,
 }
 
 #[derive(Clone)]
@@ -75,8 +78,15 @@ impl AppState {
                     NaiveNixosOption {
                         name,
                         description: option.description.clone().unwrap_or_default(),
-                        declarations: option.declarations.clone(),
+                        declarations: option
+                            .declarations
+                            .iter()
+                            .map(|d| d.to_string())
+                            .collect_vec(),
                         default: option.default.clone().map(|e| e.text).unwrap_or_default(),
+                        example: option.example.clone().map(|e| e.text).unwrap_or_default(),
+                        option_type: option.option_type,
+                        read_only: option.read_only,
                     },
                 );
             }
@@ -152,7 +162,7 @@ impl AppState {
         let mut all_options = HashMap::new();
 
         for uri in uris {
-            if let Some(options) = build_options_for_input(&uri.flake_uri()) {
+            if let Some(options) = build_options_for_input(&uri) {
                 all_options.insert(uri.branch, options);
             } else {
                 println!(
@@ -223,12 +233,12 @@ async fn search_handler(
         let template = ItemTemplate { results };
         HtmlTemplate(template).into_response()
     } else {
-        let branches = state.channels.keys().sorted().cloned().collect_vec();
+        let branches = state.channels.keys().sorted().collect_vec();
         let results = get_results(&form, &state);
         HtmlTemplate(IndexTemplate {
             branches,
             results,
-            search_value: form.q.clone(),
+            search_value: &form.q,
         })
         .into_response()
     }
@@ -270,9 +280,9 @@ where
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
-    branches: Vec<String>,
+    branches: Vec<&'a String>,
     results: Vec<&'a NaiveNixosOption>,
-    search_value: String,
+    search_value: &'a str,
 }
 
 #[derive(Template)]

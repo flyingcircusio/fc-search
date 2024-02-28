@@ -5,7 +5,19 @@
 
     <p>{{ item.description }}</p>
 
+    <p>Type: `{{item.option_type}}`</p>
+
+    {% if item.read_only %}
+    <p>This option is read-only!</p>
+    {% endif %}
+
     <p>Default: `{{item.default}}`</p>
+
+    {% if item.example != "" %}
+    <p>Example</p>
+
+    <p>{{item.example}}</p>
+    {% endif %}
 
     <div>
         Declared in:
@@ -17,3 +29,4 @@
     </div>
 </li>
 {% endfor %}
+

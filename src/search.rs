@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, STORED, TEXT};
+use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, TEXT};
 use tantivy::{Document, Index};
 
 pub fn create_index(index_path: &PathBuf) -> tantivy::Result<()> {

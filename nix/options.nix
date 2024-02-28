@@ -41,13 +41,16 @@ let
         ];
       };
 
-      options = pkgs.runCommand "options.json" {
+      options = pkgs.runCommand "fc-search-options" {
         options = (pkgs.nixosOptionsDoc {
           inherit (fc-options) options;
           warningsAreErrors = false;
         }).optionsJSON;
       } ''
+        mkdir -p $out
         cp $options/share/doc/nixos/options.json $out
+        echo ${nixpkgs} >> $out/nixpkgs
+        echo ${fc-nixos} >> $out/fc-nixos
       '';
     in options;
 in mkOptions
