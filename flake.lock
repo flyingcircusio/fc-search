@@ -43,16 +43,16 @@
     "fc-nixos": {
       "flake": false,
       "locked": {
-        "lastModified": 1708959346,
-        "narHash": "sha256-E8LaSqYxJbthLXCnI9tg5XXThOuq61zwHJgd4zNV17Y=",
-        "owner": "PhilTaken",
+        "lastModified": 1709215317,
+        "narHash": "sha256-BEqAImEj1Le3IUmnHK/Ojqw5c4OwD6ZPizLVO1FYyZk=",
+        "owner": "flyingcircusio",
         "repo": "fc-nixos",
-        "rev": "e63b22edc8c81d74c37b68f5148eda1c507a47f6",
+        "rev": "6029b67084a50be4923ce2340fdde147458b7d7f",
         "type": "github"
       },
       "original": {
-        "owner": "PhilTaken",
-        "ref": "flake2.0",
+        "owner": "flyingcircusio",
+        "ref": "fc-23.11-dev",
         "repo": "fc-nixos",
         "type": "github"
       }

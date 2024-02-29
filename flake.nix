@@ -2,7 +2,7 @@
   inputs = {
     # override this via `--override input fc-nixos ${channel}`
     #fc-nixos.url = "github:flyingcircusio/fc-nixos";
-    fc-nixos.url = "github:PhilTaken/fc-nixos/flake2.0";
+    fc-nixos.url = "github:flyingcircusio/fc-nixos/fc-23.11-dev";
     fc-nixos.flake = false;
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";

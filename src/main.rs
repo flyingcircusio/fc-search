@@ -73,9 +73,8 @@ struct ChannelSearcher {
     schema: Schema,
 }
 
-// TODO adjust after testing
 fn default_channel() -> String {
-    "flake2.0".to_string()
+    "fc-23.11-dev".to_string()
 }
 
 #[derive(Deserialize, Debug)]
@@ -176,7 +175,7 @@ impl AppState {
         write_entries(&index_path, &options).unwrap();
 
         let mut channels = HashMap::new();
-        channels.insert("flake2.0".to_string(), options);
+        channels.insert("fc-23.11-dev".to_string(), options);
         Self::with_options(channels)
     }
 
@@ -185,9 +184,9 @@ impl AppState {
     async fn trivial() -> Self {
         //let uris = get_fcio_flake_uris().await.unwrap();
         let uris = vec![Flake {
-            owner: "PhilTaken".to_string(),
+            owner: "flyingcircusio".to_string(),
             name: "fc-nixos".to_string(),
-            branch: "flake2.0".to_string(),
+            branch: "fc-23.11-dev".to_string(),
         }];
 
         println!(
