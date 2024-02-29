@@ -1,12 +1,13 @@
 use rust_embed::RustEmbed;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
+use url::Url;
 
 use anyhow::Context;
 use askama::Template;
 use axum::{
     extract::State,
     http::{header, HeaderMap, StatusCode, Uri},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
     Router,
 };
@@ -27,7 +28,7 @@ use tempfile::TempDir;
 #[derive(Debug)]
 struct NaiveNixosOption {
     name: String,
-    declarations: Vec<String>,
+    declarations: Vec<Html>,
     description: String,
     default: String,
     example: String,
@@ -35,10 +36,33 @@ struct NaiveNixosOption {
     read_only: bool,
 }
 
+#[derive(Debug, Clone)]
+pub enum Declaration {
+    Naive(String),
+    Processed(Url),
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub struct Html(pub String);
+
+impl Display for Html {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl Declaration {
+    pub fn as_html(&self) -> Html {
+        match self {
+            Declaration::Naive(s) => Html(format!("<i>{}</i>", s)),
+            Declaration::Processed(url) => Html(format!("<i><a href=\"{}\">{}</a></i>", url, url)),
+        }
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
-    // TODO hashmap of hashmaps for all channels
-    // arc to prevent clones here, just need read access in the search handler
+    // Arc to prevent clones here, just need read access in the search handler
     channels: Arc<HashMap<String, ChannelSearcher>>,
 }
 
@@ -73,16 +97,28 @@ impl AppState {
 
             let mut naive_options = HashMap::new();
             for (name, option) in options.into_iter() {
+                let declarations = option
+                    .declarations
+                    .iter()
+                    .map(|decl| match Url::parse(decl) {
+                        Ok(mut url) => {
+                            if !url.path().ends_with(".nix") {
+                                url = url
+                                    .join("default.nix")
+                                    .expect("could not join url with simple string");
+                            }
+                            Declaration::Processed(url).as_html()
+                        }
+                        Err(_) => Declaration::Naive(decl.to_string()).as_html(),
+                    })
+                    .collect_vec();
+
                 naive_options.insert(
                     name.clone(),
                     NaiveNixosOption {
                         name,
+                        declarations,
                         description: option.description.clone().unwrap_or_default(),
-                        declarations: option
-                            .declarations
-                            .iter()
-                            .map(|d| d.to_string())
-                            .collect_vec(),
                         default: option.default.clone().map(|e| e.text).unwrap_or_default(),
                         example: option.example.clone().map(|e| e.text).unwrap_or_default(),
                         option_type: option.option_type,
@@ -278,7 +314,7 @@ where
 }
 
 #[derive(Template)]
-#[template(path = "index.html")]
+#[template(path = "index.html", escape = "none")]
 struct IndexTemplate<'a> {
     branches: Vec<&'a String>,
     results: Vec<&'a NaiveNixosOption>,
@@ -286,7 +322,7 @@ struct IndexTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "item.html")]
+#[template(path = "item.html", escape = "none")]
 struct ItemTemplate<'a> {
     results: Vec<&'a NaiveNixosOption>,
 }
@@ -299,7 +335,7 @@ where
 {
     fn into_response(self) -> Response {
         match self.0.render() {
-            Ok(html) => Html(html).into_response(),
+            Ok(html) => axum::response::Html(html).into_response(),
             Err(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to render template. Error: {}", err),

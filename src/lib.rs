@@ -3,11 +3,10 @@ pub mod search;
 use itertools::Itertools;
 use reqwest::header::HeaderMap;
 use reqwest::Client;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
-use url::Url;
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub enum ExpressionType {
@@ -24,34 +23,10 @@ pub struct Expression {
     pub text: String,
 }
 
-fn deserialize_declaration<'de, D>(deserializer: D) -> Result<Declaration, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let buf = String::deserialize(deserializer)?;
-    Ok(Declaration::Naive(buf))
-}
-
-#[derive(Deserialize, Debug, Serialize, Clone)]
-#[serde(untagged)]
-pub enum Declaration {
-    Naive(String),
-    Processed(Url),
-}
-
-impl Declaration {
-    pub fn to_string(&self) -> String {
-        match self {
-            Self::Naive(s) => s.to_string(),
-            Self::Processed(u) => u.as_str().to_string(),
-        }
-    }
-}
-
 // TODO include name during deserialization from hashmap
 #[derive(Deserialize, Debug, Serialize, Clone, Default)]
 pub struct NixosOption {
-    pub declarations: Vec<Declaration>,
+    pub declarations: Vec<String>,
     pub default: Option<Expression>,
     pub description: Option<String>,
     pub example: Option<Expression>,
@@ -207,35 +182,21 @@ pub fn build_options_for_input(fc_nixos: &Flake) -> Option<HashMap<String, Nixos
 
     let nixpkgs_url = "https://github.com/nixos/nixpkgs/blob/master";
 
-    let raw_options = serde_json::from_str(&contents)
+    serde_json::from_str(&contents)
         .map(|mut options: HashMap<String, NixosOption>| {
             for (_, option) in options.iter_mut() {
-                for dec in option.declarations.iter_mut() {
-                    if let Declaration::Naive(ref mut declaration) = dec.clone() {
-                        let decl = if declaration.starts_with(&nixpkgs_path) {
-                            declaration.replace(&nixpkgs_path, &nixpkgs_url)
-                        } else {
-                            declaration.replace(&fc_nixos_path, &fc_nixos.github_base_url())
-                        };
+                for declaration in option.declarations.iter_mut() {
+                    let decl = if declaration.starts_with(&nixpkgs_path) {
+                        declaration.replace(&nixpkgs_path, nixpkgs_url)
+                    } else {
+                        declaration.replace(&fc_nixos_path, &fc_nixos.github_base_url())
+                    };
 
-                        let Ok(mut url) = Url::parse(&decl) else {
-                            continue;
-                        };
-
-                        if !url.path().ends_with(".nix") {
-                            url = url
-                                .join("default.nix")
-                                .expect("could not join url with simple string");
-                        }
-
-                        *dec = Declaration::Processed(url);
-                    }
+                    *declaration = decl;
                 }
             }
 
             options
         })
-        .ok();
-
-    raw_options
+        .ok()
 }

@@ -59,7 +59,7 @@ pub fn write_entries(
     for (option_name, option) in entries {
         let mut document = Document::default();
         document.add_text(original_name, option_name.clone());
-        document.add_text(name, option_name.clone().replace(".", " "));
+        document.add_text(name, option_name.clone().replace('.', " "));
         document.add_text(description, option.description.clone().unwrap_or_default());
         document.add_text(
             default,
