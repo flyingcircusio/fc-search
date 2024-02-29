@@ -5,22 +5,29 @@
 
     <p>{{ item.description }}</p>
 
-    <p>Type: `{{item.option_type}}`</p>
-
     {% if item.read_only %}
     <p>This option is read-only!</p>
     {% endif %}
 
-    <p>Default: `{{item.default}}`</p>
+    <div class="py-2 grid grid-cols-7">
+        <p>Type</p>
+        <code class="col-span-6">
+            {{item.option_type}}
+        </code>
 
-    {% if item.example != "" %}
-    <p>Example</p>
+        <p>Default</p>
+        <code class="col-span-6">
+            {{item.default}}
+        </code>
 
-    <p>{{item.example}}</p>
-    {% endif %}
+        <p>Example</p>
+
+        <code class="col-span-6">
+            {{item.example}}
+        </code>
+    </div>
 
     <div>
-        Declared in:
         <ul>
         {% for s in item.declarations %}
             <li>{{ s }}</li>
