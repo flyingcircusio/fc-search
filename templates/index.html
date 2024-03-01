@@ -20,13 +20,13 @@
                 hx-target="#search-results">
 
                 <input
-                    class="rounded-full px-3 py-2 w-1/2" id="search-input"
+                    class="rounded-full px-3 py-2 w-1/2 bg-gray-100" id="search-input"
                     type="search" name="q" placeholder="begin typing to search..."
                     value="{{search_value}}"
                 />
 
-                <div class="p-3">
-                    <label for="channel">Channel:</label>
+                <div class="px-3 py-2 m-3 bg-gray-50 rounded-full">
+                    <label class="pr-1" for="channel">Channel:</label>
                     <select name="channel" id="channel">
                         {% for branch in branches %}
                         <option value="{{branch}}">{{branch}}</option>

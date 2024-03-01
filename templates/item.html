@@ -30,7 +30,7 @@
     <div>
         <ul>
         {% for s in item.declarations %}
-            <li>{{ s }}</li>
+            <li>{{ s|safe }}</li>
         {% endfor %}
         </ul>
     </div>

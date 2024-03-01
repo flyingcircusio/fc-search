@@ -55,7 +55,10 @@ impl Declaration {
     pub fn as_html(&self) -> Html {
         match self {
             Declaration::Naive(s) => Html(format!("<i>{}</i>", s)),
-            Declaration::Processed(url) => Html(format!("<i><a href=\"{}\">{}</a></i>", url, url)),
+            Declaration::Processed(url) => Html(format!(
+                "<a class=\"text-blue-900 hover:underline\" href=\"{}\">{}</a>",
+                url, url
+            )),
         }
     }
 }
@@ -313,7 +316,7 @@ where
 }
 
 #[derive(Template)]
-#[template(path = "index.html", escape = "none")]
+#[template(path = "index.html")]
 struct IndexTemplate<'a> {
     branches: Vec<&'a String>,
     results: Vec<&'a NaiveNixosOption>,
@@ -321,7 +324,7 @@ struct IndexTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "item.html", escape = "none")]
+#[template(path = "item.html")]
 struct ItemTemplate<'a> {
     results: Vec<&'a NaiveNixosOption>,
 }
