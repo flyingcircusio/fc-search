@@ -77,13 +77,13 @@
           devShells.default =
             config.nci.outputs."fc-search".devShell.overrideAttrs (old:
               {
-                DATABASE_URL = "sqlite:test.db";
                 packages = (old.packages or [ ])
                   ++ [ pkgs.bacon pkgs.samply pkgs.tailwindcss pkgs.drill ];
                 shellHook = ''
                   ${old.shellHook or ""}
                   ${config.pre-commit.installationScript}
                 '';
+                RUST_LOG = "fc_search=debug";
               } // (pkgs.lib.optionalAttrs (system == "aarch64-linux") {
                 # use mold in the devshell on aarch64-linux for quicker iteration
                 LD_LIBRARY_PATH = "$LD_LIBRARY_PATH:${
@@ -92,7 +92,8 @@
                   }";
                 CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER =
                   "${pkgs.llvmPackages.clangUseLLVM}/bin/clang";
-                RUSTFLAGS = "-Clink-arg=-fuse-ld=${pkgs.mold}/bin/mold";
+                RUSTFLAGS =
+                  "-Clink-arg=-fuse-ld=${pkgs.mold}/bin/mold -Zthreads=0 -Zshare-generics=n";
               }));
         };
     };

@@ -1,5 +1,5 @@
 concurrency: 4
-base: 'https://search.test.fcio.net'
+base: 'http://localhost:8000'
 iterations: 5000
 rampup: 2
 

@@ -2,3 +2,6 @@
 /.pre-commit-config.yaml
 *.json
 assets/
+
+# to test the state directory locally
+test-state-dir/
