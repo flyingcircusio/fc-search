@@ -1,12 +1,12 @@
 use super::NixosOption;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, TEXT};
 use tantivy::{Document, Index};
 
-pub fn create_index(index_path: &PathBuf) -> tantivy::Result<()> {
+pub fn create_index(index_path: &Path) -> tantivy::Result<()> {
     let mut schema_builder = Schema::builder();
 
     let raw_stored = TextOptions::default()
@@ -35,7 +35,7 @@ pub fn create_index(index_path: &PathBuf) -> tantivy::Result<()> {
 }
 
 pub fn write_entries(
-    index_path: &PathBuf,
+    index_path: &Path,
     entries: &HashMap<String, NixosOption>,
 ) -> tantivy::Result<()> {
     let index = Index::open_in_dir(index_path)?;
@@ -72,7 +72,7 @@ pub fn write_entries(
     Ok(())
 }
 
-pub fn search_entries(index_path: &PathBuf, query: String) -> tantivy::Result<Vec<String>> {
+pub fn search_entries(index_path: &Path, query: String) -> tantivy::Result<Vec<String>> {
     let index = Index::open_in_dir(index_path)?;
     let schema = index.schema();
     let name = schema.get_field("name").expect("the field should exist");
