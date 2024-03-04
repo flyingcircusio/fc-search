@@ -1,12 +1,55 @@
 pub mod search;
+use crate::search::{create_index, write_entries};
+use std::path::Path;
 
 use itertools::Itertools;
 use reqwest::header::HeaderMap;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::process::Command;
+use tracing::{debug, error, info, warn};
+use url::Url;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NaiveNixosOption {
+    pub name: String,
+    pub declarations: Vec<Html>,
+    pub description: String,
+    pub default: String,
+    pub example: String,
+    pub option_type: String,
+    pub read_only: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum Declaration {
+    Naive(String),
+    Processed(Url),
+}
+
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Html(pub String);
+
+impl Display for Html {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl Declaration {
+    pub fn as_html(&self) -> Html {
+        match self {
+            Declaration::Naive(s) => Html(format!("<i>{}</i>", s)),
+            Declaration::Processed(url) => Html(format!(
+                "<a class=\"text-blue-900 hover:underline\" href=\"{}\">{}</a>",
+                url, url
+            )),
+        }
+    }
+}
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub enum ExpressionType {
@@ -51,14 +94,42 @@ struct Jobset {
     inputs: HashMap<String, JobsetInput>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub enum FlakeRev {
+    Specific(String),
+    Latest,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Flake {
     pub owner: String,
     pub name: String,
     pub branch: String,
+    pub rev: FlakeRev,
+}
+
+#[derive(Deserialize)]
+struct GithubCommitInfo {
+    sha: String,
+}
+
+#[derive(Deserialize)]
+struct GithubBranchInfo {
+    name: String,
+    commit: GithubCommitInfo,
 }
 
 impl Flake {
+    pub async fn new(owner: &str, name: &str, branch: &str) -> anyhow::Result<Self> {
+        let rev = Self::get_latest_rev(owner, name, branch).await?;
+        Ok(Self {
+            owner: owner.to_string(),
+            name: name.to_string(),
+            branch: branch.to_string(),
+            rev,
+        })
+    }
+
     pub fn flake_uri(&self) -> String {
         format!("github:{}/{}/{}", self.owner, self.name, self.branch)
     }
@@ -68,6 +139,47 @@ impl Flake {
             "https://github.com/{}/{}/blob/{}",
             self.owner, self.name, self.branch
         )
+    }
+
+    #[tracing::instrument]
+    pub async fn get_latest_rev(owner: &str, name: &str, branch: &str) -> anyhow::Result<FlakeRev> {
+        let client = Client::builder()
+            .build()
+            .expect("could not build request client");
+
+        let url = format!(
+            "https://api.github.com/repos/{}/{}/branches/{}",
+            owner, name, branch
+        );
+        let response_text = client
+            .get(url)
+            .header("Accept", "application/json")
+            .header("User-Agent", "fc-search")
+            .send()
+            .await
+            .expect("unable to fetch repository info")
+            .text()
+            .await
+            .expect("expected to get text for api response from github");
+
+        let ghinfo: GithubBranchInfo = match serde_json::from_str(&response_text) {
+            Ok(s) => s,
+            Err(e) => {
+                error!(
+                    "did not get valid json from the github api {} {}",
+                    response_text, e
+                );
+                anyhow::bail!("invalid json");
+            }
+        };
+
+        assert_eq!(
+            ghinfo.name, branch,
+            "got an api response for a different branch"
+        );
+        debug!("latest rev is {}", ghinfo.commit.sha);
+
+        Ok(FlakeRev::Specific(ghinfo.commit.sha))
     }
 }
 
@@ -124,17 +236,22 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
         // TODO error handling?
         assert_eq!(repo, "https://github.com/flyingcircusio/fc-nixos");
 
-        ret.push(Flake {
-            owner: "flyingcircusio".to_string(),
-            name: "fc-nixos".to_string(),
-            branch: branch.to_string(),
-        });
+        let flake = match Flake::new("flyingcircusio", "fc-nixos", branch).await {
+            Ok(s) => s,
+            Err(e) => {
+                error!("error fetching jobset: {e:?}");
+                continue;
+            }
+        };
+        ret.push(flake);
     }
 
     Ok(ret)
 }
 
-pub fn build_options_for_input(fc_nixos: &Flake) -> Option<HashMap<String, NixosOption>> {
+pub fn build_options_for_input(fc_nixos: &Flake) -> anyhow::Result<HashMap<String, NixosOption>> {
+    // TODO decouple from flake
+    // maybe try nix eval?
     let build_command = Command::new("nix")
         .args([
             "build",
@@ -149,12 +266,11 @@ pub fn build_options_for_input(fc_nixos: &Flake) -> Option<HashMap<String, Nixos
 
     if !build_command.status.success() {
         let stderr = String::from_utf8(build_command.stderr).expect("valid utf-8 in stderr");
-        println!(
+        anyhow::bail!(
             "failed to build options for {}\nstderr: {}",
             fc_nixos.flake_uri(),
             stderr
         );
-        return None;
     }
 
     let build_output = std::str::from_utf8(&build_command.stdout)
@@ -182,8 +298,8 @@ pub fn build_options_for_input(fc_nixos: &Flake) -> Option<HashMap<String, Nixos
 
     let nixpkgs_url = "https://github.com/nixos/nixpkgs/blob/master";
 
-    serde_json::from_str(&contents)
-        .map(|mut options: HashMap<String, NixosOption>| {
+    Ok(
+        serde_json::from_str(&contents).map(|mut options: HashMap<String, NixosOption>| {
             for (_, option) in options.iter_mut() {
                 for declaration in option.declarations.iter_mut() {
                     let decl = if declaration.starts_with(&nixpkgs_path) {
@@ -197,6 +313,108 @@ pub fn build_options_for_input(fc_nixos: &Flake) -> Option<HashMap<String, Nixos
             }
 
             options
-        })
-        .ok()
+        })?,
+    )
+}
+
+pub fn option_to_naive(
+    options: &HashMap<String, NixosOption>,
+) -> HashMap<String, NaiveNixosOption> {
+    let mut out = HashMap::new();
+    for (name, option) in options.iter() {
+        let declarations = option
+            .declarations
+            .iter()
+            .map(|decl| match Url::parse(decl) {
+                Ok(mut url) => {
+                    if !url.path().ends_with(".nix") {
+                        url = url
+                            .join("default.nix")
+                            .expect("could not join url with simple string");
+                    }
+                    Declaration::Processed(url).as_html()
+                }
+                Err(_) => Declaration::Naive(decl.to_string()).as_html(),
+            })
+            .collect_vec();
+
+        out.insert(
+            name.clone(),
+            NaiveNixosOption {
+                name: name.to_string(),
+                declarations,
+                description: option.description.clone().unwrap_or_default(),
+                default: option.default.clone().map(|e| e.text).unwrap_or_default(),
+                example: option.example.clone().map(|e| e.text).unwrap_or_default(),
+                option_type: option.option_type.clone(),
+                read_only: option.read_only,
+            },
+        );
+    }
+    out
+}
+
+#[tracing::instrument(skip(flake))]
+pub fn load_options(
+    branch_path: &Path,
+    flake: &Flake,
+) -> anyhow::Result<HashMap<String, NaiveNixosOption>> {
+    // TODO verify revision
+    anyhow::ensure!(
+        branch_path.exists(),
+        "failed to load branch for channel searcher. path {} does not exist",
+        branch_path.display()
+    );
+
+    // rebuild options if the revision is not cached or the cached rev is "latest"
+    let saved_flake: Flake = serde_json::from_str(&std::fs::read_to_string(
+        branch_path.join("flake_info.json"),
+    )?)?;
+    if saved_flake.rev == FlakeRev::Latest || saved_flake.rev != flake.rev {
+        warn!(
+            "saved flake rev != requested flake ref: {:?} != {:?}",
+            saved_flake.rev, flake.rev
+        );
+        anyhow::bail!("rebuild the options");
+    }
+    info!("loading options from cache");
+
+    let naive_options_raw = std::fs::read_to_string(branch_path.join("options.json"))?;
+    Ok(serde_json::from_str(&naive_options_raw)?)
+}
+
+#[tracing::instrument]
+pub fn build_options(
+    branch_path: &Path,
+    flake: &Flake,
+) -> anyhow::Result<HashMap<String, NaiveNixosOption>> {
+    // generate tantivy index in a separate dir
+    let index_path = branch_path.join("tantivy");
+
+    debug!("rebuilding options");
+
+    std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
+    let options = build_options_for_input(flake)?;
+
+    // generate the tantivy index
+    create_index(&index_path)?;
+    write_entries(&index_path, &options)?;
+
+    let naive_options = option_to_naive(&options);
+
+    // cache the generated naive nixos options
+    std::fs::write(
+        branch_path.join("options.json"),
+        serde_json::to_string(&naive_options).expect("failed to serialize naive options"),
+    )
+    .expect("failed to save naive options");
+
+    // cache the current branch + revision
+    std::fs::write(
+        branch_path.join("flake_info.json"),
+        serde_json::to_string(&flake).expect("failed to serialize flake info"),
+    )
+    .expect("failed to save flake info");
+
+    Ok(naive_options)
 }
