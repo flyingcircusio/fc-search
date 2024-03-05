@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use fc_search::{build_options, build_options_for_input, get_fcio_flake_uris, load_options, Flake};
+use fc_search::nix::build_options_for_fcio_branch;
+use fc_search::{build_new_index, get_fcio_flake_uris, load_options, Flake};
 use tracing::{error, info, warn};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -35,8 +36,7 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     if args.test {
         let fc_nixos = Flake::new("flyingcircusio", "fc-nixos", "fc-23.11-dev").await?;
-        let vals =
-            build_options_for_input(&fc_nixos).expect("the fc-23.11-dev branch failed to build");
+        let vals = build_options_for_fcio_branch(&fc_nixos).unwrap();
         let outstring = serde_json::to_string(&vals)?;
         std::fs::write("out.json", outstring)?;
         return Ok(());
@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
             Ok(_) => info!("branch {} is up to date", flake.branch),
             Err(_) => {
                 warn!("need to rebuild options for branch {}", flake.branch);
-                if let Err(e) = build_options(&branch_path, &flake) {
+                if let Err(e) = build_new_index(&branch_path, &flake) {
                     error!("failed to build options for branch {}: {e:?}", flake.branch);
                 } else {
                     info!("successfully rebuilt options for branch {}", flake.branch);

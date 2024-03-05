@@ -1,4 +1,8 @@
+pub mod nix;
 pub mod search;
+
+use nix::NixosOption;
+
 use crate::search::{create_index, write_entries};
 use std::path::Path;
 
@@ -8,8 +12,6 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::path::PathBuf;
-use std::process::Command;
 use tracing::{debug, error, info, warn};
 use url::Url;
 
@@ -24,12 +26,6 @@ pub struct NaiveNixosOption {
     pub read_only: bool,
 }
 
-#[derive(Debug, Clone)]
-pub enum Declaration {
-    Naive(String),
-    Processed(Url),
-}
-
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Html(pub String);
 
@@ -37,6 +33,12 @@ impl Display for Html {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum Declaration {
+    Naive(String),
+    Processed(Url),
 }
 
 impl Declaration {
@@ -49,34 +51,6 @@ impl Declaration {
             )),
         }
     }
-}
-
-#[derive(Deserialize, Debug, Serialize, Clone)]
-pub enum ExpressionType {
-    #[serde(rename = "literalExpression")]
-    LiteralExpression,
-    #[serde(rename = "literalMD")]
-    LiteralMd,
-}
-
-#[derive(Deserialize, Debug, Serialize, Clone)]
-pub struct Expression {
-    #[serde(rename = "_type")]
-    pub option_type: ExpressionType,
-    pub text: String,
-}
-
-// TODO include name during deserialization from hashmap
-#[derive(Deserialize, Debug, Serialize, Clone, Default)]
-pub struct NixosOption {
-    pub declarations: Vec<String>,
-    pub default: Option<Expression>,
-    pub description: Option<String>,
-    pub example: Option<Expression>,
-    #[serde(rename = "readOnly")]
-    pub read_only: bool,
-    #[serde(rename = "type")]
-    pub option_type: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -249,74 +223,6 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
     Ok(ret)
 }
 
-pub fn build_options_for_input(fc_nixos: &Flake) -> anyhow::Result<HashMap<String, NixosOption>> {
-    // TODO decouple from flake
-    // maybe try nix eval?
-    let build_command = Command::new("nix")
-        .args([
-            "build",
-            ".#options",
-            "--impure",
-            "--print-out-paths",
-            "--no-link",
-        ])
-        .args(["--override-input", "fc-nixos", &fc_nixos.flake_uri()])
-        .output()
-        .unwrap();
-
-    if !build_command.status.success() {
-        let stderr = String::from_utf8(build_command.stderr).expect("valid utf-8 in stderr");
-        anyhow::bail!(
-            "failed to build options for {}\nstderr: {}",
-            fc_nixos.flake_uri(),
-            stderr
-        );
-    }
-
-    let build_output = std::str::from_utf8(&build_command.stdout)
-        .expect("valid utf-8")
-        .strip_suffix('\n')
-        .unwrap();
-
-    // TODO logging / tracing
-    println!("[fc-search] reading json from directory {build_output:#?}");
-
-    let path = PathBuf::from(build_output);
-
-    let contents = std::fs::read_to_string(path.join("options.json")).unwrap();
-    let nixpkgs_path = std::fs::read_to_string(path.join("nixpkgs"))
-        .expect("could not read path to nixpkgs in store")
-        .trim()
-        .to_string();
-    let fc_nixos_path = std::fs::read_to_string(path.join("fc-nixos"))
-        .expect("could not read path to fc-nixos in store")
-        .trim()
-        .to_string();
-
-    dbg!(&nixpkgs_path);
-    dbg!(&fc_nixos_path);
-
-    let nixpkgs_url = "https://github.com/nixos/nixpkgs/blob/master";
-
-    Ok(
-        serde_json::from_str(&contents).map(|mut options: HashMap<String, NixosOption>| {
-            for (_, option) in options.iter_mut() {
-                for declaration in option.declarations.iter_mut() {
-                    let decl = if declaration.starts_with(&nixpkgs_path) {
-                        declaration.replace(&nixpkgs_path, nixpkgs_url)
-                    } else {
-                        declaration.replace(&fc_nixos_path, &fc_nixos.github_base_url())
-                    };
-
-                    *declaration = decl;
-                }
-            }
-
-            options
-        })?,
-    )
-}
-
 pub fn option_to_naive(
     options: &HashMap<String, NixosOption>,
 ) -> HashMap<String, NaiveNixosOption> {
@@ -384,7 +290,7 @@ pub fn load_options(
 }
 
 #[tracing::instrument]
-pub fn build_options(
+pub fn build_new_index(
     branch_path: &Path,
     flake: &Flake,
 ) -> anyhow::Result<HashMap<String, NaiveNixosOption>> {
@@ -394,7 +300,7 @@ pub fn build_options(
     debug!("rebuilding options");
 
     std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
-    let options = build_options_for_input(flake)?;
+    let options = nix::build_options_for_fcio_branch(flake)?;
 
     // generate the tantivy index
     create_index(&index_path)?;

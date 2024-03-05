@@ -1,4 +1,4 @@
-use fc_search::NixosOption;
+use fc_search::nix::NixosOption;
 use std::collections::HashMap;
 use tempfile::TempDir;
 

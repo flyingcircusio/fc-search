@@ -17,9 +17,11 @@ use tantivy::{
 use tracing::{debug, info};
 
 use fc_search::{
-    build_options, get_fcio_flake_uris, load_options, option_to_naive,
+    build_new_index, get_fcio_flake_uris, load_options,
+    nix::NixosOption,
+    option_to_naive,
     search::{create_index, write_entries},
-    Flake, NaiveNixosOption, NixosOption,
+    Flake, NaiveNixosOption,
 };
 
 use serde::Deserialize;
@@ -106,7 +108,7 @@ impl ChannelSearcher {
                 std::fs::create_dir_all(branch_path)
                     .expect("failed to create index path in state dir");
                 debug!("failed to load cached options ({:?}), rebuilding", e);
-                build_options(branch_path, flake)?
+                build_new_index(branch_path, flake)?
             }
         };
 
@@ -168,7 +170,7 @@ impl AppState {
 
 fn test_options() -> HashMap<String, HashMap<String, NixosOption>> {
     let branch_name = "fc-23.11-dev";
-    let options: HashMap<String, fc_search::NixosOption> = serde_json::from_str(
+    let options: HashMap<String, fc_search::nix::NixosOption> = serde_json::from_str(
         &std::fs::read_to_string("out.json")
             .expect("unable to read 'out.json', please generate it first"),
     )

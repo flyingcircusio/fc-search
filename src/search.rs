@@ -1,4 +1,4 @@
-use super::NixosOption;
+use crate::nix::NixosOption;
 use std::collections::HashMap;
 use std::path::Path;
 use tantivy::collector::TopDocs;
