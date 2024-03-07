@@ -2,4 +2,4 @@
 let
   mkOption = import options_nix;
   fc_nixos = builtins.getFlake "github:flyingcircusio/fc-nixos/${branch}";
-in mkOption fc_nixos "aarch64-linux"
+in mkOption fc_nixos (builtins.currentSystem)
