@@ -1,5 +1,9 @@
 use rust_embed::RustEmbed;
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::Context;
 use askama::Template;
@@ -14,39 +18,48 @@ use itertools::Itertools;
 use tantivy::{
     collector::TopDocs, query::QueryParser, schema::Schema, Index, Searcher, TantivyError,
 };
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use fc_search::{
     build_new_index, get_fcio_flake_uris, load_options,
     nix::NixosOption,
     option_to_naive,
     search::{create_index, write_entries},
-    Flake, NaiveNixosOption,
+    update_index, Flake, NaiveNixosOption,
 };
+
+use tokio::time::{interval_at, Duration, Instant};
 
 use serde::Deserialize;
 
 #[derive(Clone)]
 struct AppState {
-    // Arc to prevent clones here, just need read access in the search handler
+    // Arc to prevent clones for every request, just need read access in the search handler
     channels: Arc<HashMap<String, ChannelSearcher>>,
 }
 
-struct ChannelSearcher {
+struct ChannelSearcherInner {
     options: HashMap<String, NaiveNixosOption>,
     query_parser: QueryParser,
     searcher: Searcher,
     schema: Schema,
 }
 
-impl ChannelSearcher {
+struct ChannelSearcher {
+    inner: Option<ChannelSearcherInner>,
+
+    // members required for updating the options at runtime
+    branch_path: PathBuf,
+    flake: Option<Flake>,
+}
+
+impl ChannelSearcherInner {
     fn with_options(
         branch_path: &Path,
         options: HashMap<String, NixosOption>,
     ) -> anyhow::Result<Self> {
         let naive_options = option_to_naive(&options);
 
-        // generate the tantivy index
         let index_path = branch_path.join("tantivy");
 
         std::fs::create_dir_all(index_path.clone()).expect("could not create the index path");
@@ -65,7 +78,7 @@ impl ChannelSearcher {
     fn with_naive_options(
         branch_path: &Path,
         naive_options: HashMap<String, NaiveNixosOption>,
-    ) -> anyhow::Result<ChannelSearcher> {
+    ) -> anyhow::Result<Self> {
         let index_path = branch_path.join("tantivy");
 
         let index = Index::open_in_dir(index_path).expect("could not open the index path");
@@ -93,13 +106,51 @@ impl ChannelSearcher {
             schema,
         })
     }
+}
+
+impl ChannelSearcher {
+    pub fn start_timer(&self) {
+        if let Some(flake) = &self.flake {
+            info!("[{}] started timer", flake.branch);
+
+            let mut flake = flake.clone();
+            let branch_path = self.branch_path.clone();
+            tokio::spawn(async move {
+                let start = Instant::now() + Duration::from_hours(2);
+                let mut interval = interval_at(start, Duration::from_hours(2));
+
+                loop {
+                    match Flake::get_latest_rev(&flake.owner, &flake.name, &flake.branch).await {
+                        Ok(new_flake_rev) => {
+                            flake.rev = new_flake_rev;
+                            match update_index(&branch_path, &flake) {
+                                Ok(_) => info!("[{}] successfully updated branch", flake.branch),
+                                Err(e) => error!("[{}] error updating branch: {}", flake.branch, e),
+                            };
+                        }
+                        Err(e) => {
+                            error!("[{}] error getting the newest commit: {}", flake.branch, e)
+                        }
+                    };
+
+                    let period = interval.period();
+                    info!(
+                        "[{}] next tick in {:?}h {:?}m",
+                        flake.branch,
+                        period.as_secs() / (60 * 60),
+                        (period.as_secs() / 60) % 60
+                    );
+                    interval.tick().await;
+                }
+            });
+        }
+    }
 
     pub fn from_flake(branch_path: &Path, flake: &Flake) -> anyhow::Result<Self> {
-        // try to load the options
         // in case of failure or when the cached options are different from the requested ones
         // try to regenerate the options
-        let naive_options = match load_options(branch_path, flake) {
-            Ok(opts) => opts,
+        let inner = match load_options(branch_path, flake) {
+            Ok(opts) => ChannelSearcherInner::with_naive_options(branch_path, opts).ok(),
             Err(e) => {
                 // TODO: cache old options and restore if building the new ones fails?
                 if branch_path.exists() {
@@ -108,11 +159,18 @@ impl ChannelSearcher {
                 std::fs::create_dir_all(branch_path)
                     .expect("failed to create index path in state dir");
                 info!("failed to load cached options ({:?}), rebuilding", e);
-                build_new_index(branch_path, flake)?
+
+                build_new_index(branch_path, flake)
+                    .map(|opts| ChannelSearcherInner::with_naive_options(branch_path, opts).ok())
+                    .unwrap_or_default()
             }
         };
 
-        Self::with_naive_options(branch_path, naive_options)
+        Ok(Self {
+            inner,
+            branch_path: branch_path.to_path_buf(),
+            flake: Some(flake.clone()),
+        })
     }
 }
 
@@ -142,6 +200,8 @@ impl AppState {
                 continue;
             };
 
+            searcher.start_timer();
+
             channels.insert(branchname, searcher);
         }
 
@@ -158,11 +218,13 @@ impl AppState {
 
         let mut channels = HashMap::new();
         for (branch_name, options) in channel_options {
-            let index_path = state_dir.join(branch_name.clone());
-            channels.insert(
-                branch_name,
-                ChannelSearcher::with_options(&index_path, options)?,
-            );
+            let branch_path = state_dir.join(branch_name.clone());
+            let searcher = ChannelSearcher {
+                inner: ChannelSearcherInner::with_options(&branch_path, options).ok(),
+                branch_path,
+                flake: None,
+            };
+            channels.insert(branch_name, searcher);
         }
 
         Ok(Self {
@@ -253,7 +315,12 @@ async fn search_handler<'a>(
         let template = ItemTemplate { results };
         HtmlTemplate(template).into_response()
     } else {
-        let branches = state.channels.keys().sorted().collect_vec();
+        let branches = state
+            .channels
+            .iter()
+            .filter_map(|(name, searcher)| searcher.inner.is_some().then(|| name))
+            .sorted()
+            .collect_vec();
         let results = get_results(&form, &state);
         HtmlTemplate(IndexTemplate {
             branches,
@@ -335,14 +402,27 @@ fn get_results<'a>(form: &SearchForm, state: &'a AppState) -> Vec<&'a NaiveNixos
         return Vec::new();
     };
 
-    let query = channel.query_parser.parse_query_lenient(&form.q).0;
+    let Some(ref inner) = channel.inner else {
+        debug!(
+            "attempted to query from channel that has not yet been indexed successfully: {}",
+            channel
+                .flake
+                .as_ref()
+                .map(|f| f.branch.clone())
+                .unwrap_or_default()
+        );
+        // TODO: display in ui that the channel is not available?
+        return Vec::new();
+    };
 
-    let top_docs = channel
+    let query = inner.query_parser.parse_query_lenient(&form.q).0;
+
+    let top_docs = inner
         .searcher
         .search(&query, &TopDocs::with_limit(30))
         .unwrap();
 
-    let name = channel
+    let name = inner
         .schema
         .get_field("original_name")
         .expect("schema has field name");
@@ -350,7 +430,7 @@ fn get_results<'a>(form: &SearchForm, state: &'a AppState) -> Vec<&'a NaiveNixos
     let results: Vec<&NaiveNixosOption> = top_docs
         .into_iter()
         .map(|(_score, doc_address)| {
-            let retrieved = channel.searcher.doc(doc_address).unwrap();
+            let retrieved = inner.searcher.doc(doc_address).unwrap();
             retrieved
                 .get_first(name)
                 .expect("result has a value for name")
@@ -359,7 +439,7 @@ fn get_results<'a>(form: &SearchForm, state: &'a AppState) -> Vec<&'a NaiveNixos
                 .to_string()
         })
         .map(|name| {
-            channel
+            inner
                 .options
                 .get(&name)
                 .expect("found option exists in hashmap")

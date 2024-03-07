@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
+use tracing::{debug, info};
 
 use crate::Flake;
 
@@ -112,9 +113,10 @@ pub fn build_options_for_fcio_branch(
         .trim()
         .to_string();
 
-    dbg!(&nixpkgs_path);
-    dbg!(&fc_nixos_path);
+    debug!("nixpkgs path is {}", nixpkgs_path);
+    debug!("fc_nixos path is {}", fc_nixos_path);
 
+    // TODO infer actual nixpkgs url from versions.json
     let nixpkgs_url = "https://github.com/nixos/nixpkgs/blob/master";
 
     Ok(

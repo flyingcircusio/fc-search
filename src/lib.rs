@@ -89,14 +89,14 @@ struct Jobset {
     inputs: HashMap<String, JobsetInput>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum FlakeRev {
     Specific(String),
     Latest,
     FallbackToCached,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Flake {
     pub owner: String,
     pub name: String,
@@ -355,7 +355,7 @@ pub fn build_new_index(
     // generate tantivy index in a separate dir
     let index_path = branch_path.join("tantivy");
 
-    info!("rebuilding options + index");
+    info!("building options + index");
 
     std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
     let options = nix::build_options_for_fcio_branch(flake)?;
@@ -383,4 +383,35 @@ pub fn build_new_index(
     info!("successfully rebuilt options + index");
 
     Ok(naive_options)
+}
+
+#[tracing::instrument]
+pub fn update_index(branch_path: &Path, flake: &Flake) -> anyhow::Result<()> {
+    anyhow::ensure!(branch_path.exists(), "branch path does not exist!");
+    let index_path = branch_path.join("tantivy");
+
+    std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
+    let options = nix::build_options_for_fcio_branch(flake)?;
+
+    // write the new options to the index
+    write_entries(&index_path, &options)?;
+
+    // cache the generated naive nixos options
+    let naive_options = option_to_naive(&options);
+    std::fs::write(
+        branch_path.join("options.json"),
+        serde_json::to_string(&naive_options).expect("failed to serialize naive options"),
+    )
+    .expect("failed to save naive options");
+
+    // cache the current branch + revision
+    std::fs::write(
+        branch_path.join("flake_info.json"),
+        serde_json::to_string(&flake).expect("failed to serialize flake info"),
+    )
+    .expect("failed to save flake info");
+
+    info!("successfully rebuilt options + index");
+
+    Ok(())
 }
