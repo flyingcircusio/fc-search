@@ -3,7 +3,7 @@
 
     <p class="font-bold py-1">{{ item.name }}</p>
 
-    <p>{{ item.description }}</p>
+    <p>{{ item.description|safe }}</p>
 
     {% if item.read_only %}
     <p>This option is read-only!</p>
@@ -17,13 +17,13 @@
 
         <p>Default</p>
         <code class="col-span-6">
-            {{item.default}}
+            {{ item.default|safe }}
         </code>
 
         <p>Example</p>
 
         <code class="col-span-6">
-            {{item.example}}
+            {{ item.example|safe }}
         </code>
     </div>
 

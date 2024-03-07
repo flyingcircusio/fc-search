@@ -15,15 +15,21 @@ use std::fmt::Display;
 use tracing::{debug, error, info, warn};
 use url::Url;
 
+use self::nix::Expression;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NaiveNixosOption {
     pub name: String,
     pub declarations: Vec<Html>,
-    pub description: String,
-    pub default: String,
-    pub example: String,
+    pub description: Html,
+    pub default: Html,
+    pub example: Html,
     pub option_type: String,
     pub read_only: bool,
+}
+
+pub trait NixHtml {
+    fn as_html(&self) -> Html;
 }
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -41,8 +47,8 @@ pub enum Declaration {
     Processed(Url),
 }
 
-impl Declaration {
-    pub fn as_html(&self) -> Html {
+impl NixHtml for Declaration {
+    fn as_html(&self) -> Html {
         match self {
             Declaration::Naive(s) => Html(format!("<i>{}</i>", s)),
             Declaration::Processed(url) => Html(format!(
@@ -50,6 +56,21 @@ impl Declaration {
                 url, url
             )),
         }
+    }
+}
+
+impl NixHtml for Expression {
+    fn as_html(&self) -> Html {
+        match self.option_type {
+            nix::ExpressionType::LiteralExpression => Html(self.text.clone()),
+            nix::ExpressionType::LiteralMd => Html(markdown::to_html(&self.text)),
+        }
+    }
+}
+
+impl NixHtml for String {
+    fn as_html(&self) -> Html {
+        Html(markdown::to_html(&self))
     }
 }
 
@@ -249,9 +270,21 @@ pub fn option_to_naive(
             NaiveNixosOption {
                 name: name.to_string(),
                 declarations,
-                description: option.description.clone().unwrap_or_default(),
-                default: option.default.clone().map(|e| e.text).unwrap_or_default(),
-                example: option.example.clone().map(|e| e.text).unwrap_or_default(),
+                description: option
+                    .description
+                    .clone()
+                    .map(|e| e.as_html())
+                    .unwrap_or_default(),
+                default: option
+                    .default
+                    .clone()
+                    .map(|e| e.as_html())
+                    .unwrap_or_default(),
+                example: option
+                    .example
+                    .clone()
+                    .map(|e| e.as_html())
+                    .unwrap_or_default(),
                 option_type: option.option_type.clone(),
                 read_only: option.read_only,
             },

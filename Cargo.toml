@@ -13,6 +13,7 @@ axum = { version = "0.7.4", features = ["macros"] }
 clap = { version = "4.5.1", features = ["derive"] }
 ctrlc = "3.4.2"
 itertools = "0.12.1"
+markdown = "1.0.0-alpha.16"
 mime_guess = "2.0.4"
 reqwest = "0.11.24"
 rust-embed = { version = "8.2.0", features = ["axum", "compression"] }
