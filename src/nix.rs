@@ -83,15 +83,22 @@ pub fn build_options_for_fcio_branch(
 
     let derivation_output = std::str::from_utf8(&derivation_cmd.stdout)
         .expect("valid utf-8")
-        .strip_suffix('\n')
-        .unwrap();
+        .trim_end();
 
     let build_cmd = Command::new("nix-build").arg(derivation_output).output()?;
 
+    if !build_cmd.status.success() {
+        let stderr = String::from_utf8(build_cmd.stderr).expect("valid utf-8 in stderr");
+        anyhow::bail!(
+            "failed to build options for {}\nstderr: {}",
+            flake.flake_uri(),
+            stderr
+        );
+    }
+
     let build_output = std::str::from_utf8(&build_cmd.stdout)
         .expect("valid utf-8")
-        .strip_suffix('\n')
-        .unwrap();
+        .trim_end();
 
     let path = PathBuf::from(build_output);
 
@@ -108,7 +115,6 @@ pub fn build_options_for_fcio_branch(
     dbg!(&nixpkgs_path);
     dbg!(&fc_nixos_path);
 
-    // TODO: link to actual commit, not master
     let nixpkgs_url = "https://github.com/nixos/nixpkgs/blob/master";
 
     Ok(
