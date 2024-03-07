@@ -14,7 +14,7 @@ use itertools::Itertools;
 use tantivy::{
     collector::TopDocs, query::QueryParser, schema::Schema, Index, Searcher, TantivyError,
 };
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use fc_search::{
     build_new_index, get_fcio_flake_uris, load_options,
@@ -107,7 +107,7 @@ impl ChannelSearcher {
                 }
                 std::fs::create_dir_all(branch_path)
                     .expect("failed to create index path in state dir");
-                debug!("failed to load cached options ({:?}), rebuilding", e);
+                info!("failed to load cached options ({:?}), rebuilding", e);
                 build_new_index(branch_path, flake)?
             }
         };
@@ -136,10 +136,13 @@ impl AppState {
         for flake in branches {
             let branchname = flake.branch.clone();
             let branch_path = state_dir.join(branchname.clone());
-            channels.insert(
-                branchname,
-                ChannelSearcher::from_flake(&branch_path, &flake)?,
-            );
+
+            let Ok(searcher) = ChannelSearcher::from_flake(&branch_path, &flake) else {
+                warn!("failed to build channel {}", flake.branch);
+                continue;
+            };
+
+            channels.insert(branchname, searcher);
         }
 
         Ok(Self {

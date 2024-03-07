@@ -108,6 +108,7 @@ pub fn build_options_for_fcio_branch(
     dbg!(&nixpkgs_path);
     dbg!(&fc_nixos_path);
 
+    // TODO: link to actual commit, not master
     let nixpkgs_url = "https://github.com/nixos/nixpkgs/blob/master";
 
     Ok(

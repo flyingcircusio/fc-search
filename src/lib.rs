@@ -93,6 +93,7 @@ struct Jobset {
 pub enum FlakeRev {
     Specific(String),
     Latest,
+    FallbackToCached,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -115,8 +116,14 @@ struct GithubBranchInfo {
 }
 
 impl Flake {
+    #[tracing::instrument]
     pub async fn new(owner: &str, name: &str, branch: &str) -> anyhow::Result<Self> {
-        let rev = Self::get_latest_rev(owner, name, branch).await?;
+        let rev = Self::get_latest_rev(owner, name, branch)
+            .await
+            .unwrap_or_else(|_| {
+                warn!("failed to fetch latest rev. Trying to fall back to cached options");
+                FlakeRev::FallbackToCached
+            });
         Ok(Self {
             owner: owner.to_string(),
             name: name.to_string(),
@@ -136,7 +143,6 @@ impl Flake {
         )
     }
 
-    #[tracing::instrument]
     pub async fn get_latest_rev(owner: &str, name: &str, branch: &str) -> anyhow::Result<FlakeRev> {
         let client = Client::builder()
             .build()
@@ -206,7 +212,7 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
         .sorted()
         .collect();
 
-    let mut ret = Vec::new();
+    let mut branches: Vec<String> = Vec::new();
 
     for jobset_id in jobsets {
         let jobset = client
@@ -218,30 +224,44 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
 
         let jobset: Jobset = serde_json::from_str(&jobset).unwrap();
 
-        let Some(fc) = jobset.inputs.get("fc") else {
-            // println!("{jobset_id} has no input 'fc'");
-            continue;
-        };
+        match jobset.inputs.get("fc") {
+            Some(input) => {
+                let (repo, branch) = input
+                    .value
+                    .split_once(' ')
+                    .expect("value does not have scheme `uri branch`");
 
-        let (repo, branch) = fc
-            .value
-            .split_once(' ')
-            .expect("value has scheme `uri branch`");
-
-        // TODO error handling?
-        assert_eq!(repo, "https://github.com/flyingcircusio/fc-nixos");
-
-        let flake = match Flake::new("flyingcircusio", "fc-nixos", branch).await {
-            Ok(s) => s,
-            Err(e) => {
-                error!("error fetching jobset: {e:?}");
-                continue;
+                // TODO error handling?
+                assert_eq!(repo, "https://github.com/flyingcircusio/fc-nixos");
+                branches.push(branch.to_string());
             }
-        };
-        ret.push(flake);
+            _ => {
+                warn!("jobset {:?} has no input fc", jobset);
+            }
+        }
     }
 
-    Ok(ret)
+    // index newest branches first to circumvent rate limits when indexing the more important newer branches
+    branches.sort();
+    branches.reverse();
+
+    // only keep the newest 9 branches => 3 channels (dev, staging + prod each)
+    branches.truncate(3 * 3);
+
+    let mut flakes = Vec::new();
+    for branch in branches.into_iter() {
+        match Flake::new("flyingcircusio", "fc-nixos", &branch).await {
+            Ok(s) => flakes.push(s),
+            Err(e) => error!("error fetching information about branch {}: {e:?}", branch),
+        };
+    }
+
+    info!(
+        "fetched branches {:?} from hydra",
+        flakes.iter().map(|f| f.branch.clone()).collect_vec()
+    );
+
+    Ok(flakes)
 }
 
 pub fn option_to_naive(
@@ -293,30 +313,35 @@ pub fn option_to_naive(
     out
 }
 
-#[tracing::instrument(skip(flake))]
+#[tracing::instrument]
 pub fn load_options(
     branch_path: &Path,
     flake: &Flake,
 ) -> anyhow::Result<HashMap<String, NaiveNixosOption>> {
-    // TODO verify revision
     anyhow::ensure!(
         branch_path.exists(),
         "failed to load branch for channel searcher. path {} does not exist",
         branch_path.display()
     );
 
-    // rebuild options if the revision is not cached or the cached rev is "latest"
-    let saved_flake: Flake = serde_json::from_str(&std::fs::read_to_string(
-        branch_path.join("flake_info.json"),
-    )?)?;
-    if saved_flake.rev == FlakeRev::Latest || saved_flake.rev != flake.rev {
-        warn!(
-            "saved flake rev != requested flake ref: {:?} != {:?}",
-            saved_flake.rev, flake.rev
-        );
-        anyhow::bail!("rebuild the options");
+    if flake.rev != FlakeRev::FallbackToCached {
+        let saved_flake: Flake = serde_json::from_str(&std::fs::read_to_string(
+            branch_path.join("flake_info.json"),
+        )?)?;
+
+        // rebuild options if the revision is not cached or the cached rev is "latest"
+        if saved_flake.rev == FlakeRev::Latest || saved_flake.rev != flake.rev {
+            warn!(
+                "saved flake rev != requested flake ref: {:?} != {:?}",
+                saved_flake.rev, flake.rev
+            );
+            info!("channel info is outdated, need to rebuild");
+            anyhow::bail!("rebuild the options");
+        }
+        info!("loading options from cache");
+    } else {
+        info!("falling back to cached options");
     }
-    info!("loading options from cache");
 
     let naive_options_raw = std::fs::read_to_string(branch_path.join("options.json"))?;
     Ok(serde_json::from_str(&naive_options_raw)?)
@@ -330,7 +355,7 @@ pub fn build_new_index(
     // generate tantivy index in a separate dir
     let index_path = branch_path.join("tantivy");
 
-    debug!("rebuilding options");
+    info!("rebuilding options + index");
 
     std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
     let options = nix::build_options_for_fcio_branch(flake)?;
@@ -354,6 +379,8 @@ pub fn build_new_index(
         serde_json::to_string(&flake).expect("failed to serialize flake info"),
     )
     .expect("failed to save flake info");
+
+    info!("successfully rebuilt options + index");
 
     Ok(naive_options)
 }
