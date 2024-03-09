@@ -8,13 +8,13 @@
     <body>
         <div class="flex justify-center my-10">
             <h1 class="text-6xl">
-                Search NixOS Options
+                Search NixOS Packages
             </h1>
         </div>
 
         <div class="flex justify-center w-full">
             <form class="grow flex flex-col justify-center items-center"
-                hx-get="/search"
+                hx-get="/search/packages"
                 hx-trigger="input changed delay:200ms from:#search-input, search from:#search-input, change from:#channel"
                 hx-push-url="true"
                 hx-target="#search-results">
@@ -39,7 +39,7 @@
         <div class="flex justify-center p-4">
             <div class="flex justify-center w-2/3">
                 <ul class="grow" id="search-results">
-                    {% include "item.html" %}
+                    {% include "package_item.html" %}
                 </ul>
             </div>
         </div>

@@ -1,25 +1,22 @@
 use fc_search::nix::NixosOption;
+use fc_search::option_to_naive;
 use std::collections::HashMap;
 use tempfile::TempDir;
 
-use fc_search::search::{create_index, search_entries, write_entries};
+use fc_search::search::{OptionsSearcher, Searcher};
 
-fn main() -> tantivy::Result<()> {
+fn main() -> anyhow::Result<()> {
     let index_path = TempDir::new()?;
 
-    create_index(index_path.path())?;
+    let naive_options = {
+        let options: HashMap<String, NixosOption> =
+            serde_json::from_str(&std::fs::read_to_string("out.json")?)?;
+        option_to_naive(&options)
+    };
 
-    let options: HashMap<String, NixosOption> =
-        serde_json::from_str(&std::fs::read_to_string("out.json")?)?;
-
-    write_entries(index_path.path(), &options)?;
-
-    let results = search_entries(
-        index_path.path(),
-        "flyingcircus.roles.devhost enable".to_string(),
-    )?;
+    let searcher = OptionsSearcher::new_with_options(index_path.path(), naive_options)?;
+    let results = searcher.search_entries("flyingcircus.roles.devhost enable");
 
     dbg!(&results);
-
     Ok(())
 }

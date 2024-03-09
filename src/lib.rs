@@ -1,9 +1,10 @@
+#![feature(duration_constructors)]
+
 pub mod nix;
 pub mod search;
 
 use nix::NixosOption;
 
-use crate::search::{create_index, write_entries};
 use std::path::Path;
 
 use itertools::Itertools;
@@ -15,9 +16,9 @@ use std::fmt::Display;
 use tracing::{debug, error, info, warn};
 use url::Url;
 
-use self::nix::Expression;
+use self::nix::{Expression, NixPackage};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NaiveNixosOption {
     pub name: String,
     pub declarations: Vec<Html>,
@@ -32,7 +33,7 @@ pub trait NixHtml {
     fn as_html(&self) -> Html;
 }
 
-#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Html(pub String);
 
 impl Display for Html {
@@ -70,7 +71,7 @@ impl NixHtml for Expression {
 
 impl NixHtml for String {
     fn as_html(&self) -> Html {
-        Html(markdown::to_html(&self))
+        Html(markdown::to_html(self))
     }
 }
 
@@ -314,10 +315,13 @@ pub fn option_to_naive(
 }
 
 #[tracing::instrument]
-pub fn load_options(
+pub fn load_packages_and_options(
     branch_path: &Path,
     flake: &Flake,
-) -> anyhow::Result<HashMap<String, NaiveNixosOption>> {
+) -> anyhow::Result<(
+    HashMap<String, NaiveNixosOption>,
+    HashMap<String, NixPackage>,
+)> {
     anyhow::ensure!(
         branch_path.exists(),
         "failed to load branch for channel searcher. path {} does not exist",
@@ -344,74 +348,8 @@ pub fn load_options(
     }
 
     let naive_options_raw = std::fs::read_to_string(branch_path.join("options.json"))?;
-    Ok(serde_json::from_str(&naive_options_raw)?)
-}
-
-#[tracing::instrument]
-pub fn build_new_index(
-    branch_path: &Path,
-    flake: &Flake,
-) -> anyhow::Result<HashMap<String, NaiveNixosOption>> {
-    // generate tantivy index in a separate dir
-    let index_path = branch_path.join("tantivy");
-
-    info!("building options + index");
-
-    std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
-    let options = nix::build_options_for_fcio_branch(flake)?;
-
-    // generate the tantivy index
-    create_index(&index_path)?;
-    write_entries(&index_path, &options)?;
-
-    let naive_options = option_to_naive(&options);
-
-    // cache the generated naive nixos options
-    std::fs::write(
-        branch_path.join("options.json"),
-        serde_json::to_string(&naive_options).expect("failed to serialize naive options"),
-    )
-    .expect("failed to save naive options");
-
-    // cache the current branch + revision
-    std::fs::write(
-        branch_path.join("flake_info.json"),
-        serde_json::to_string(&flake).expect("failed to serialize flake info"),
-    )
-    .expect("failed to save flake info");
-
-    info!("successfully rebuilt options + index");
-
-    Ok(naive_options)
-}
-
-#[tracing::instrument]
-pub fn update_index(branch_path: &Path, flake: &Flake) -> anyhow::Result<()> {
-    anyhow::ensure!(branch_path.exists(), "branch path does not exist!");
-    let index_path = branch_path.join("tantivy");
-
-    std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
-    let options = nix::build_options_for_fcio_branch(flake)?;
-
-    // write the new options to the index
-    write_entries(&index_path, &options)?;
-
-    // cache the generated naive nixos options
-    let naive_options = option_to_naive(&options);
-    std::fs::write(
-        branch_path.join("options.json"),
-        serde_json::to_string(&naive_options).expect("failed to serialize naive options"),
-    )
-    .expect("failed to save naive options");
-
-    // cache the current branch + revision
-    std::fs::write(
-        branch_path.join("flake_info.json"),
-        serde_json::to_string(&flake).expect("failed to serialize flake info"),
-    )
-    .expect("failed to save flake info");
-
-    info!("successfully rebuilt options + index");
-
-    Ok(())
+    let packages_raw = std::fs::read_to_string(branch_path.join("packages.json"))?;
+    let options = serde_json::from_str(&naive_options_raw)?;
+    let packages = serde_json::from_str(&packages_raw)?;
+    Ok((options, packages))
 }

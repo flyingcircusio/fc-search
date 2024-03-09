@@ -1,0 +1,30 @@
+{% for item in results %}
+<li class="my-4 p-2 border border-2 rounded">
+
+    <p class="font-bold py-1">{{ item.attribute_name }}</p>
+
+    <p>{{ item.description.clone().unwrap_or_default() }}</p>
+
+    <div class="py-2 grid grid-cols-7">
+        <p>Version</p>
+        <code class="col-span-6">
+            {{ item.version.clone().unwrap_or_default() }}
+        </code>
+
+        <p>Name</p>
+        <code class="col-span-6">
+            {{ item.name }}
+        </code>
+
+        <p>Default Output</p>
+        <code class="col-span-6">
+            {{ item.default_output }}
+        </code>
+
+        <p>License</p>
+        <code class="col-span-6">
+            {{ item.license.clone().unwrap_or_default() }}
+        </code>
+    </div>
+</li>
+{% endfor %}

@@ -8,6 +8,10 @@ plan:
     request:
       url: /
 
-  - name: Search something
+  - name: Search options
     request:
-      url: /search?q=nginx
+      url: /search/options?q=nginx
+
+  - name: Search packages
+    request:
+      url: /search/packages?q=nginx
