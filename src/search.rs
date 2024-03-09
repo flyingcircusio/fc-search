@@ -10,13 +10,13 @@ use tokio::time::Interval;
 use tracing::{debug, error, info};
 
 use crate::nix::{self, NixPackage};
-use crate::{Flake, FlakeRev, NaiveNixosOption};
+use crate::{Flake, NaiveNixosOption};
 
 #[allow(dead_code)]
 struct SearcherInner {
     schema: Schema,
-    query_parser: QueryParser,
     index: tantivy::Index,
+    query_parser: QueryParser,
     searcher: tantivy::Searcher,
     reference_field: Field,
 }
@@ -124,8 +124,12 @@ impl Searcher for OptionsSearcher {
 
     /// updates indexed + cached entries with new ones
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()> {
-        let index = Index::open_in_dir(&self.index_path)?;
-        let schema = index.schema();
+        let Some(ref inner) = self.inner else {
+            anyhow::bail!("can not update options before index creation");
+        };
+
+        let index = &inner.index;
+        let schema = &inner.schema;
 
         let mut index_writer = index.writer(50_000_000)?;
         let name = schema
@@ -144,6 +148,7 @@ impl Searcher for OptionsSearcher {
         index_writer
             .delete_all_documents()
             .expect("failed to delete all documents");
+
         for (option_name, option) in &entries {
             let mut document = Document::default();
             document.add_text(original_name, option_name.clone());
@@ -270,9 +275,12 @@ impl Searcher for PackagesSearcher {
     }
 
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()> {
-        let index = Index::open_in_dir(&self.index_path)?;
-        let schema = index.schema();
+        let Some(ref inner) = self.inner else {
+            anyhow::bail!("can not update options before index creation");
+        };
 
+        let index = &inner.index;
+        let schema = &inner.schema;
         let mut index_writer = index.writer(50_000_000)?;
 
         let attribute_name = schema
@@ -440,20 +448,35 @@ impl ChannelSearcher {
                                 f.branch, new_flake_rev
                             );
                         }
+
                         match update_file_cache(&branch_path, &f) {
                             Ok((options, packages)) => {
                                 info!("[{}] successfully updated branch", f.branch);
 
-                                let inner = ChannelSearcherInner::new_with_values(
-                                    &branch_path,
-                                    options,
-                                    packages,
-                                );
+                                if !active {
+                                    let inner = ChannelSearcherInner::new_with_values(
+                                        &branch_path,
+                                        options,
+                                        packages,
+                                    );
 
-                                {
                                     let mut s = searcher.lock().unwrap();
                                     s.flake.rev = new_flake_rev;
                                     s.inner = inner;
+                                } else {
+                                    let mut s = searcher.lock().unwrap();
+                                    // this is guaranteed to be true after the `active` check from above
+                                    // but the type system insists on unpacking it
+                                    // since this is not a critical path, unsafe unwrapping is not
+                                    // warranted
+                                    if let Some(ref mut i) = &mut s.inner {
+                                        i.options
+                                            .update_entries(options)
+                                            .expect("could not update options");
+                                        i.packages
+                                            .update_entries(packages)
+                                            .expect("could not update packages");
+                                    }
                                 }
                             }
                             Err(e) => error!("[{}] error updating branch: {}", f.branch, e),
