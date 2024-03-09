@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use fc_search::nix::build_options_for_fcio_branch;
-use fc_search::search::update_index;
+use fc_search::search::update_file_cache;
 use fc_search::{get_fcio_flake_uris, load_packages_and_options, Flake};
 use tracing::{error, info, warn};
 use tracing_subscriber::layer::SubscriberExt;
@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
             Ok(_) => info!("branch {} is up to date", flake.branch),
             Err(_) => {
                 warn!("need to rebuild options for branch {}", flake.branch);
-                if let Err(e) = update_index(&branch_path, &flake) {
+                if let Err(e) = update_file_cache(&branch_path, &flake) {
                     error!("failed to build options for branch {}: {e:?}", flake.branch);
                 } else {
                     info!("successfully rebuilt options for branch {}", flake.branch);

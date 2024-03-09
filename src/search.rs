@@ -423,27 +423,37 @@ impl ChannelSearcher {
         tokio::spawn(async move {
             loop {
                 interval.tick().await;
-                let (branch_path, f) = {
+                let (branch_path, f, active) = {
                     let s = searcher.lock().unwrap();
-                    (s.branch_path.clone(), s.flake.clone())
+                    (s.branch_path.clone(), s.flake.clone(), s.active())
                 };
                 info!("[{}] starting update", f.branch);
 
                 let latest_rev = Flake::get_latest_rev(&f.owner, &f.name, &f.branch).await;
                 match latest_rev {
-                    Ok(new_flake_rev) if new_flake_rev != f.rev || f.rev == FlakeRev::Latest => {
-                        info!("[{}] found newer revision: {:?}", f.branch, new_flake_rev);
-                        match update_index(&branch_path, &f) {
+                    Ok(new_flake_rev) if !active || new_flake_rev != f.rev => {
+                        if active {
+                            info!("[{}] found newer revision: {:?}", f.branch, new_flake_rev);
+                        } else {
+                            info!(
+                                "[{}] generating options for rev {:?}",
+                                f.branch, new_flake_rev
+                            );
+                        }
+                        match update_file_cache(&branch_path, &f) {
                             Ok((options, packages)) => {
                                 info!("[{}] successfully updated branch", f.branch);
+
+                                let inner = ChannelSearcherInner::new_with_values(
+                                    &branch_path,
+                                    options,
+                                    packages,
+                                );
+
                                 {
                                     let mut s = searcher.lock().unwrap();
                                     s.flake.rev = new_flake_rev;
-                                    s.inner = ChannelSearcherInner::new_with_values(
-                                        &branch_path,
-                                        options,
-                                        packages,
-                                    );
+                                    s.inner = inner;
                                 }
                             }
                             Err(e) => error!("[{}] error updating branch: {}", f.branch, e),
@@ -470,7 +480,7 @@ impl ChannelSearcher {
         if inner.is_some() {
             debug!("[{}] loaded the channel from cache", flake.branch);
         } else {
-            debug!("[{}] failed to channel from cache", flake.branch);
+            debug!("[{}] could not load the channel from cache", flake.branch);
         }
         Self {
             inner,
@@ -481,7 +491,7 @@ impl ChannelSearcher {
 }
 
 #[tracing::instrument]
-pub fn update_index(
+pub fn update_file_cache(
     branch_path: &Path,
     flake: &Flake,
 ) -> anyhow::Result<(
@@ -498,11 +508,6 @@ pub fn update_index(
         .expect("failed to create index path in state dir");
 
     let (options, packages) = nix::build_options_for_fcio_branch(flake)?;
-    let mut ps = PackagesSearcher::new(&pkgs_index_path);
-    ps.update_entries(packages.clone())?;
-    let mut os = OptionsSearcher::new(&index_path);
-    os.update_entries(options.clone())?;
-
     std::fs::write(
         branch_path.join("options.json"),
         serde_json::to_string(&options).expect("failed to serialize naive options"),
