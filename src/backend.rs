@@ -66,21 +66,19 @@ impl AppState {
         }
 
         let mut channels = HashMap::new();
-        for flake in branches {
+        for (i, flake) in branches.iter().enumerate() {
             let branchname = flake.branch.clone();
             let branch_path = state_dir.join(branchname.clone());
 
             debug!("starting searcher for branch {}", &branchname);
             let searcher = ChannelSearcher::new(&branch_path, &flake);
 
-            // prioritise rebuilding inactive searchers
             let freq = Duration::from_hours(5);
-            let interval = if searcher.active() {
-                let start_time = tokio::time::Instant::now() + Duration::from_mins(10);
-                interval_at(start_time, freq)
-            } else {
-                interval(freq)
-            };
+
+            // attempt not to (re)build multiple channels at the same time by spreading them 5
+            // minutes apart
+            let start_time = tokio::time::Instant::now() + Duration::from_mins(i as u64 * 5);
+            let interval = interval_at(start_time, freq);
             let weak = searcher.start_timer(interval);
             channels.insert(branchname, weak);
         }
