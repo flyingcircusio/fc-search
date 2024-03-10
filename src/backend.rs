@@ -44,6 +44,20 @@ struct SearchForm {
 }
 
 impl AppState {
+    fn active_branches(&self) -> Vec<&String> {
+        self.channels
+            .iter()
+            .filter(|(_, searcher)| {
+                searcher
+                    .upgrade()
+                    .and_then(|s| s.lock().map(|s| s.active()).ok())
+                    .unwrap_or(false)
+            })
+            .map(|(name, _)| name)
+            .sorted()
+            .collect_vec()
+    }
+
     fn in_dir(state_dir: &Path, branches: Vec<Flake>) -> anyhow::Result<Self> {
         debug!("initializing app state");
 
@@ -132,34 +146,41 @@ async fn index_handler() -> impl IntoResponse {
     Redirect::permanent("/search").into_response()
 }
 
-#[tracing::instrument(skip(state))]
+fn search_with_channel<F, V>(state: &AppState, channel: &str, f: F) -> Vec<V>
+where
+    F: FnOnce(&ChannelSearcher) -> Vec<&V>,
+    V: Clone,
+{
+    state
+        .channels
+        .get(channel)
+        .and_then(|c| {
+            let channel = c.upgrade()?;
+            channel
+                .lock()
+                .map(|c| f(&c).into_iter().cloned().collect_vec())
+                .ok()
+        })
+        .unwrap_or_default()
+}
+
+#[tracing::instrument(skip(state, headers))]
 async fn search_options_handler<'a>(
     State(state): State<AppState>,
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
-    let results = search_options(&form, &state);
-
+    let search_results = search_with_channel(&state, &form.channel, |c| c.search_options(&form.q));
     if headers.contains_key("HX-Request") {
-        let template = OptionItemTemplate { results };
+        let template = OptionItemTemplate {
+            results: search_results,
+        };
         return HtmlTemplate(template).into_response();
     }
 
-    let branches = state
-        .channels
-        .iter()
-        .filter(|(_, searcher)| {
-            searcher
-                .upgrade()
-                .and_then(|s| s.lock().map(|s| s.active()).ok())
-                .unwrap_or(false)
-        })
-        .map(|(name, _)| name)
-        .sorted()
-        .collect_vec();
     HtmlTemplate(OptionsIndexTemplate {
-        branches,
-        results,
+        branches: state.active_branches(),
+        results: search_results,
         search_value: &form.q,
     })
     .into_response()
@@ -171,27 +192,18 @@ async fn search_packages_handler<'a>(
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
-    let results = search_packages(&form, &state);
+    let search_results = search_with_channel(&state, &form.channel, |c| c.search_packages(&form.q));
+
     if headers.contains_key("HX-Request") {
-        let template = PackageItemTemplate { results };
+        let template = PackageItemTemplate {
+            results: search_results,
+        };
         return HtmlTemplate(template).into_response();
     }
 
-    let branches = state
-        .channels
-        .iter()
-        .filter(|(_, searcher)| {
-            searcher
-                .upgrade()
-                .and_then(|s| s.lock().map(|s| s.active()).ok())
-                .unwrap_or(false)
-        })
-        .map(|(name, _)| name)
-        .sorted()
-        .collect_vec();
     HtmlTemplate(PackagesIndexTemplate {
-        branches,
-        results,
+        branches: state.active_branches(),
+        results: search_results,
         search_value: &form.q,
     })
     .into_response()
@@ -274,33 +286,4 @@ where
                 .into_response(),
         }
     }
-}
-
-fn search_options(form: &SearchForm, state: &AppState) -> Vec<NaiveNixosOption> {
-    // return nothing if channel not found
-    let Some(channel) = state.channels.get(&form.channel).and_then(|c| c.upgrade()) else {
-        return Vec::new();
-    };
-
-    channel
-        .lock()
-        .map(|c| c.search_options(&form.q).into_iter().cloned().collect_vec())
-        .unwrap_or_default()
-}
-
-fn search_packages(form: &SearchForm, state: &AppState) -> Vec<NixPackage> {
-    // return nothing if channel not found
-    let Some(channel) = state.channels.get(&form.channel).and_then(|c| c.upgrade()) else {
-        return Vec::new();
-    };
-
-    channel
-        .lock()
-        .map(|c| {
-            c.search_packages(&form.q)
-                .into_iter()
-                .cloned()
-                .collect_vec()
-        })
-        .unwrap_or_default()
 }
