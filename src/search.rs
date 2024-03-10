@@ -1,3 +1,4 @@
+use anyhow::Context;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -17,7 +18,7 @@ struct SearcherInner {
     schema: Schema,
     index: tantivy::Index,
     query_parser: QueryParser,
-    searcher: tantivy::Searcher,
+    reader: tantivy::IndexReader,
     reference_field: Field,
 }
 
@@ -108,14 +109,13 @@ impl Searcher for OptionsSearcher {
             .try_into()
             .unwrap();
 
-        let searcher = reader.searcher();
         let query_parser = QueryParser::for_index(&index, vec![name, description, default]);
 
         self.inner = Some(SearcherInner {
             schema,
             query_parser,
             index,
-            searcher,
+            reader,
             reference_field: original_name,
         });
 
@@ -166,20 +166,19 @@ impl Searcher for OptionsSearcher {
     #[tracing::instrument(skip(self))]
     fn search_entries(&self, query: &str) -> Vec<&Self::Item> {
         let Some(ref inner) = self.inner else {
-            debug!("searcher is not fully initialized, create the index first");
-            return Vec::new();
+            panic!("searcher is not fully initialized, create the index first");
         };
 
+        let searcher = inner.reader.searcher();
+
         let query = inner.query_parser.parse_query_lenient(query).0;
-        inner
-            .searcher
+        searcher
             .search(&query, &TopDocs::with_limit(30))
-            .ok()
             .map(|top_docs| {
                 top_docs
                     .into_iter()
                     .map(|(_score, doc_address)| {
-                        let retrieved = inner.searcher.doc(doc_address).unwrap();
+                        let retrieved = searcher.doc(doc_address).unwrap();
                         let name = retrieved
                             .get_first(inner.reference_field)
                             .expect("result has a value for name")
@@ -246,13 +245,10 @@ impl Searcher for PackagesSearcher {
         schema_builder.add_text_field("long_description", TEXT);
         let schema = schema_builder.build();
 
-        let index = match Index::create_in_dir(&self.index_path, schema.clone()) {
-            Ok(i) => i,
-            Err(tantivy::TantivyError::IndexAlreadyExists) => {
-                Index::open_in_dir(&self.index_path).unwrap()
-            }
-            Err(e) => return Err(anyhow::anyhow!(e)),
-        };
+        let index = Index::open_or_create(
+            tantivy::directory::MmapDirectory::open(&self.index_path).unwrap(),
+            schema.clone(),
+        )?;
 
         let reader = index
             .reader_builder()
@@ -260,14 +256,13 @@ impl Searcher for PackagesSearcher {
             .try_into()
             .unwrap();
 
-        let searcher = reader.searcher();
         let query_parser = QueryParser::for_index(&index, vec![name, description]);
 
         self.inner = Some(SearcherInner {
             schema,
             query_parser,
             index,
-            searcher,
+            reader,
             reference_field: attribute_name,
         });
 
@@ -323,16 +318,16 @@ impl Searcher for PackagesSearcher {
             return Vec::new();
         };
 
+        let searcher = inner.reader.searcher();
         let query = inner.query_parser.parse_query_lenient(query).0;
-        inner
-            .searcher
+        searcher
             .search(&query, &TopDocs::with_limit(30))
             .ok()
             .map(|top_docs| {
                 top_docs
                     .into_iter()
                     .map(|(_score, doc_address)| {
-                        let retrieved = inner.searcher.doc(doc_address).unwrap();
+                        let retrieved = searcher.doc(doc_address).unwrap();
                         let name = retrieved
                             .get_first(inner.reference_field)
                             .expect("result has a value for name")
@@ -357,9 +352,6 @@ struct ChannelSearcherInner {
 impl ChannelSearcherInner {
     /// attempt to load cached options
     pub fn maybe_load(branch_path: &Path) -> Option<Self> {
-        let options_index_path = branch_path.join("tantivy");
-        let package_index_path = branch_path.join("tantivy_packages");
-
         let options =
             serde_json::from_str(&std::fs::read_to_string(branch_path.join("options.json")).ok()?)
                 .ok()?;
@@ -368,13 +360,7 @@ impl ChannelSearcherInner {
             serde_json::from_str(&std::fs::read_to_string(branch_path.join("packages.json")).ok()?)
                 .ok()?;
 
-        let o_inner = OptionsSearcher::new_with_options(&options_index_path, options).ok()?;
-        let p_inner = PackagesSearcher::new_with_packages(&package_index_path, packages).ok()?;
-
-        Some(Self {
-            options: o_inner,
-            packages: p_inner,
-        })
+        Self::new_with_values(branch_path, options, packages)
     }
 
     pub fn new_with_values(
@@ -476,6 +462,11 @@ impl ChannelSearcher {
                                         i.packages
                                             .update_entries(packages)
                                             .expect("could not update packages");
+                                    } else {
+                                        unreachable!(
+                                            "[{}] channel searcher is active but inner is not some",
+                                            f.branch
+                                        );
                                     }
                                 }
                             }
@@ -513,7 +504,7 @@ impl ChannelSearcher {
     }
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(branch_path))]
 pub fn update_file_cache(
     branch_path: &Path,
     flake: &Flake,
@@ -521,14 +512,13 @@ pub fn update_file_cache(
     HashMap<String, NaiveNixosOption>,
     HashMap<String, NixPackage>,
 )> {
-    anyhow::ensure!(branch_path.exists(), "branch path does not exist!");
-
-    let index_path = branch_path.join("tantivy");
+    let options_index_path = branch_path.join("tantivy");
     let pkgs_index_path = branch_path.join("tantivy_packages");
 
-    std::fs::create_dir_all(index_path.clone()).expect("failed to create index path in state dir");
+    std::fs::create_dir_all(options_index_path.clone())
+        .context("failed to create options index path")?;
     std::fs::create_dir_all(pkgs_index_path.clone())
-        .expect("failed to create index path in state dir");
+        .context("failed to create packages index path")?;
 
     let (options, packages) = nix::build_options_for_fcio_branch(flake)?;
     std::fs::write(

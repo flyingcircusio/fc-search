@@ -92,7 +92,7 @@ pub struct NixPackage {
 #[folder = "nix/"]
 struct NixFiles;
 
-#[tracing::instrument]
+#[tracing::instrument(skip(flake))]
 pub fn build_options_for_fcio_branch(
     flake: &Flake,
 ) -> anyhow::Result<(
