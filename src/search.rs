@@ -3,10 +3,10 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
-use tantivy::collector::TopDocs;
+use tantivy::collector::{Collector, TopDocs};
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, TextFieldIndexing, TextOptions, TEXT};
-use tantivy::{Document, Index};
+use tantivy::{DocAddress, DocId, Document, Index, Score, SegmentReader};
 use tokio::time::Interval;
 use tracing::{debug, error, info};
 
@@ -92,16 +92,13 @@ impl Searcher for OptionsSearcher {
         let original_name = schema_builder.add_text_field("original_name", raw_stored);
         let name = schema_builder.add_text_field("name", TEXT);
         let description = schema_builder.add_text_field("description", TEXT);
-        let default = schema_builder.add_text_field("default", raw_unstored);
+        schema_builder.add_text_field("default", raw_unstored);
         let schema = schema_builder.build();
 
-        let index = match Index::create_in_dir(&self.index_path, schema.clone()) {
-            Ok(i) => i,
-            Err(tantivy::TantivyError::IndexAlreadyExists) => {
-                Index::open_in_dir(&self.index_path).unwrap()
-            }
-            Err(e) => return Err(anyhow::anyhow!(e)),
-        };
+        let index = Index::open_or_create(
+            tantivy::directory::MmapDirectory::open(&self.index_path).unwrap(),
+            schema.clone(),
+        )?;
 
         let reader = index
             .reader_builder()
@@ -109,7 +106,10 @@ impl Searcher for OptionsSearcher {
             .try_into()
             .unwrap();
 
-        let query_parser = QueryParser::for_index(&index, vec![name, description, default]);
+        let mut query_parser = QueryParser::for_index(&index, vec![name, description]);
+        query_parser.set_field_fuzzy(name, true, 1, true);
+        query_parser.set_field_boost(name, 5.0);
+        query_parser.set_field_boost(description, 0.01);
 
         self.inner = Some(SearcherInner {
             schema,
@@ -170,10 +170,33 @@ impl Searcher for OptionsSearcher {
         };
 
         let searcher = inner.reader.searcher();
-
         let query = inner.query_parser.parse_query_lenient(query).0;
-        searcher
-            .search(&query, &TopDocs::with_limit(30))
+        debug!("{:#?}", query);
+
+        let scorer = TopDocs::with_limit(10).tweak_score(move |segment_reader: &SegmentReader| {
+            let store_reader = segment_reader.get_store_reader(100).unwrap();
+
+            move |doc: DocId, mut score: Score| {
+                let d = store_reader.get(doc).unwrap();
+                let name = d.field_values().first().unwrap().value.as_text().unwrap();
+
+                let fcio_option = name.starts_with("flyingcircus");
+                let enable_option = name.ends_with("enable");
+
+                if fcio_option {
+                    score *= 1.05;
+                }
+                if enable_option {
+                    score *= 1.05;
+                }
+
+                score
+            }
+        });
+
+        let results = searcher.search(&query, &scorer);
+
+        results
             .map(|top_docs| {
                 top_docs
                     .into_iter()
@@ -185,6 +208,7 @@ impl Searcher for OptionsSearcher {
                             .as_text()
                             .expect("value is text")
                             .to_string();
+
                         self.options
                             .get(&name)
                             .expect("found option is not indexed")
@@ -256,7 +280,9 @@ impl Searcher for PackagesSearcher {
             .try_into()
             .unwrap();
 
-        let query_parser = QueryParser::for_index(&index, vec![name, description]);
+        let mut query_parser = QueryParser::for_index(&index, vec![name, description]);
+        query_parser.set_field_fuzzy(name, true, 1, true);
+        query_parser.set_field_boost(name, 5.0);
 
         self.inner = Some(SearcherInner {
             schema,

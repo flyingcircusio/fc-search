@@ -42,11 +42,9 @@ async fn main() -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let fetch_all = !args.test;
-
     if let Some(state_dir) = args.state_dir {
         info!("Persistent state dir is {}", state_dir.display());
-        backend::run(args.port, fetch_all, &state_dir).await?;
+        backend::run(args.port, &state_dir, args.test).await?;
     } else {
         let temp_state_dir = TempDir::new().unwrap();
         info!("Temporary state dir is {}", temp_state_dir.path().display());
@@ -61,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         })
         .expect("failed to set a handler for c-c");
 
-        backend::run(args.port, fetch_all, temp_state_dir.path()).await?;
+        backend::run(args.port, temp_state_dir.path(), args.test).await?;
     }
 
     Ok(())

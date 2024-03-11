@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex, Weak},
     time::Duration,
 };
-use tokio::time::{interval, interval_at};
+use tokio::time::interval_at;
 
 use anyhow::Context;
 use askama::Template;
@@ -58,7 +58,7 @@ impl AppState {
             .collect_vec()
     }
 
-    fn in_dir(state_dir: &Path, branches: Vec<Flake>) -> anyhow::Result<Self> {
+    fn in_dir(state_dir: &Path, branches: Vec<Flake>, start_timers: bool) -> anyhow::Result<Self> {
         debug!("initializing app state");
 
         if !state_dir.exists() {
@@ -73,13 +73,18 @@ impl AppState {
             debug!("starting searcher for branch {}", &branchname);
             let searcher = ChannelSearcher::new(&branch_path, &flake);
 
-            let freq = Duration::from_hours(5);
-
             // attempt not to (re)build multiple channels at the same time by spreading them 5
             // minutes apart
-            let start_time = tokio::time::Instant::now() + Duration::from_mins(i as u64 * 5);
-            let interval = interval_at(start_time, freq);
-            let weak = searcher.start_timer(interval);
+            let freq = Duration::from_hours(5);
+            let weak = if start_timers {
+                let start_time = tokio::time::Instant::now() + Duration::from_mins(i as u64 * 5);
+                let interval = interval_at(start_time, freq);
+                searcher.start_timer(interval)
+            } else {
+                let start_time = tokio::time::Instant::now() + Duration::from_days(100_000);
+                let interval = interval_at(start_time, freq);
+                searcher.start_timer(interval)
+            };
             channels.insert(branchname, weak);
         }
 
@@ -89,7 +94,7 @@ impl AppState {
     }
 }
 
-pub async fn run(port: u16, fetch_all_channels: bool, state_dir: &Path) -> anyhow::Result<()> {
+pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> {
     let state = {
         let default_branches = || {
             vec![Flake {
@@ -102,17 +107,16 @@ pub async fn run(port: u16, fetch_all_channels: bool, state_dir: &Path) -> anyho
             }]
         };
 
-        // fetch branches from hydra
-        let branches = if fetch_all_channels {
+        let branches = if test {
+            default_branches()
+        } else {
             get_fcio_flake_uris()
                 .await
                 .unwrap_or_else(|_| default_branches())
-        } else {
-            default_branches()
         };
 
         // in release mode try to load the cached index from disk
-        AppState::in_dir(state_dir, branches)?
+        AppState::in_dir(state_dir, branches, !test)?
     };
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
