@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <link href="/assets/tailwind.css" rel="stylesheet" />
+        <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+        <title>FC-Search</title>
+        <link href="https://flyingcircus.io/fileadmin/global-data/fira/fira-small.css" rel="stylesheet" />
+        <style>
+            body, html {
+                font-family: 'Fira Sans';
+            }
+        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body class="px-0">
+        <header>
+            <nav class="bg-fc-green border-gray-200 px-4 lg:px-6 py-2.5 dark:bg-gray-800">
+                <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
+                    <a href="https://flyingcircus.io" class="flex items-center">
+                        <img src="https://flyingcircus.io/fileadmin/global-data/logo/RZ_FC-Logo_RGB_INV-GR_100-1080.svg" class="mr-3 h-12 sm:h-12" alt="Flying Circus Logo" />
+                    </a>
+                    <div class="flex items-center lg:order-2">
+                        <a href="https://flyingcircus.io/en/about-us/privacy-policy" class="text-white hover:text-fc-midnight dark:text-white hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 font-medium rounded-md text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800">Privacy</a>
+                        <a href="https://flyingcircus.io/en/about-us/legal-notice" class="text-white hover:text-fc-midnight dark:text-white hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 font-medium rounded-md text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800">Imprint</a>
+                    </div>
+                </div>
+            </nav>
+        </header>
+        <div class="flex justify-center my-10">
+            <h1 class="text-6xl">
+                {% block title %}
+                {% endblock %}
+            </h1>
+        </div>
+
+        <div class="flex justify-center w-full">
+            <form class="grow flex flex-col justify-center items-center"
+                hx-get="{% block search_endpoint %}{% endblock %}"
+                hx-trigger="input changed delay:200ms from:#search-input, search from:#search-input, change from:#channel"
+                hx-push-url="true"
+                hx-target="#search-results">
+
+                <input
+                    class="rounded-md px-3 py-2 w-1/2 bg-fc-blue-gray" id="search-input"
+                    type="search" name="q" placeholder="begin typing to search..."
+                    value="{{search_value}}"
+                />
+
+                <div class="px-3 py-2 m-3 outline outline-fc-blue-gray  rounded-md">
+                    <label class="pr-1" for="channel">Channel:</label>
+                    <select name="channel" id="channel">
+                        {% for branch in branches %}
+                        <option value="{{branch}}">{{branch}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex justify-center p-4">
+            <div class="flex justify-center w-2/3">
+                <ul class="grow" id="search-results">
+                    {% block search_results %}
+                    {% endblock %}
+                </ul>
+            </div>
+        </div>
+    </body>
+</html>

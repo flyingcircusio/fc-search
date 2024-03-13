@@ -20,7 +20,7 @@ use itertools::Itertools;
 use tracing::{debug, info};
 
 use fc_search::{
-    get_fcio_flake_uris, nix::NixPackage, search::ChannelSearcher, Flake, NaiveNixosOption,
+    get_fcio_flake_uris, nix::NixPackage, search::ChannelSearcher, Flake, NaiveNixosOption, NixHtml,
 };
 
 use serde::Deserialize;

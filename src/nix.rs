@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -8,7 +9,7 @@ use std::process::Command;
 use tracing::{debug, error};
 use url::Url;
 
-use crate::{option_to_naive, Flake, NaiveNixosOption};
+use crate::{option_to_naive, Flake, NaiveNixosOption, NixHtml};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub enum ExpressionType {
@@ -38,38 +39,82 @@ pub struct NixosOption {
     pub option_type: String,
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct License {
-    pub free: Option<bool>,
-    pub full_name: Option<String>,
-    pub redistributable: Option<bool>,
-    pub short_name: Option<String>,
-    pub spdx_id: Option<String>,
-    pub url: Option<Url>,
-}
-
-#[derive(Deserialize, Debug, Serialize, Clone)]
+#[derive(Deserialize, Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 #[serde(untagged)]
-pub enum LicenseT {
+pub enum License {
     Verbatim(String),
-    Informative(License),
+    #[serde(rename_all = "camelCase")]
+    Informative {
+        free: Option<bool>,
+        full_name: Option<String>,
+        redistributable: Option<bool>,
+        short_name: Option<String>,
+        spdx_id: Option<String>,
+        url: Option<Url>,
+    },
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
-#[serde(untagged)]
-pub enum LicenseType {
-    Single(LicenseT),
-    Multiple(Vec<LicenseT>),
-}
-
-impl Default for LicenseType {
-    fn default() -> Self {
-        LicenseType::Single(LicenseT::Verbatim("unknown".to_string()))
+impl NixHtml for License {
+    fn as_html(&self) -> crate::Html {
+        match self {
+            Self::Verbatim(s) => crate::Html(format!("<p>{s}</p>")),
+            Self::Informative {
+                full_name,
+                short_name,
+                url,
+                ..
+            } => {
+                let x = full_name.clone().unwrap_or_else(|| {
+                    short_name
+                        .clone()
+                        .unwrap_or_else(|| {
+                            url.clone()
+                                .map(|u| u.to_string())
+                                .unwrap_or_else(|| "unknown".to_string())
+                        })
+                        .to_string()
+                });
+                match url {
+                    Some(ref u) => crate::Html(format!(
+                        "<p><a class=\"text-blue-900 hover:underline\" href={u}>{x}</a></p>"
+                    )),
+                    None => crate::Html(format!("<p>{x}</p>")),
+                }
+            }
+        }
     }
 }
 
-impl Display for LicenseType {
+#[derive(Deserialize, Debug, Serialize, Clone, Default)]
+#[serde(untagged)]
+pub enum Plurality<T> {
+    #[default]
+    None,
+    Single(T),
+    Multiple(Vec<T>),
+    Fallback(String),
+}
+
+impl<T: NixHtml + Eq + std::hash::Hash> NixHtml for Plurality<T> {
+    fn as_html(&self) -> crate::Html {
+        match self {
+            Self::None => crate::Html("<p></p>".to_string()),
+            Self::Single(l) => l.as_html(),
+            Self::Multiple(m) => crate::Html(m.iter().unique().map(|f| f.as_html().0).join("")),
+            Self::Fallback(m) => crate::Html(format!("<code>{m}</code>")),
+        }
+    }
+}
+
+impl NixHtml for Url {
+    fn as_html(&self) -> crate::Html {
+        crate::Html(format!(
+            "<p><a class=\"text-blue-900 hover:underline\" href={self}>{self}</a></p>",
+        ))
+    }
+}
+
+impl<T: Serialize> Display for Plurality<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&serde_json::to_string_pretty(self).unwrap_or_default())
     }
@@ -82,10 +127,13 @@ pub struct NixPackage {
     pub description: Option<String>,
     #[serde(rename = "camelCase")]
     pub long_description: Option<String>,
-    pub license: Option<LicenseType>,
+    #[serde(default)]
+    pub license: Plurality<License>,
     pub name: String,
     pub outputs: Vec<String>,
     pub version: Option<String>,
+    #[serde(default)]
+    pub homepage: Plurality<Url>,
 }
 
 #[derive(RustEmbed)]

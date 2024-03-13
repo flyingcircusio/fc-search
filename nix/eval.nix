@@ -40,6 +40,9 @@
           # paths = builtins.listToAttrs ( map (output: {name = output; value = drv.${output};}) drv.outputs );
           default_output = drv.outputName;
         }
+        // lib.optionalAttrs (drv ? meta.homepage) {
+          inherit (drv.meta) homepage;
+        }
         // lib.optionalAttrs (drv ? meta.description) {
           inherit (drv.meta) description;
         }

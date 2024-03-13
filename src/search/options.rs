@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use tantivy::collector::{Collector, TopDocs};
 use tantivy::query::{Query, QueryParser};
-use tantivy::schema::{Facet, FacetOptions, Schema, TextFieldIndexing, TextOptions, TEXT};
+use tantivy::schema::{Facet, FacetOptions, Schema, TextOptions, TEXT};
 use tantivy::{DocId, Document, Score, SegmentReader};
 
 use super::{open_or_create_index, FCFruit, Searcher, SearcherInner};
@@ -62,9 +62,7 @@ impl Searcher for OptionsSearcher {
         //query_parser.set_field_boost(name, 5.0);
         //query_parser.set_conjunction_by_default();
 
-        let ret = query_parser.parse_query_lenient(query_string).0;
-        dbg!(&ret);
-        ret
+        query_parser.parse_query_lenient(query_string).0
     }
 
     /// creates the index and initializes the struct that holds

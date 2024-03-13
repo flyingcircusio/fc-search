@@ -33,6 +33,15 @@ pub trait NixHtml {
     fn as_html(&self) -> Html;
 }
 
+impl<T: NixHtml> NixHtml for Option<T> {
+    fn as_html(&self) -> Html {
+        match self {
+            Some(s) => s.as_html(),
+            None => Html("".to_string()),
+        }
+    }
+}
+
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Html(pub String);
 

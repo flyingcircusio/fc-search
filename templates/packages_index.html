@@ -1,47 +1,9 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <link href="/assets/tailwind.css" rel="stylesheet" />
-        <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
-        <title>FC-Search</title>
-    </head>
-    <body>
-        <div class="flex justify-center my-10">
-            <h1 class="text-6xl">
-                Search NixOS Packages
-            </h1>
-        </div>
+{% extends "index.html" %}
 
-        <div class="flex justify-center w-full">
-            <form class="grow flex flex-col justify-center items-center"
-                hx-get="/search/packages"
-                hx-trigger="input changed delay:200ms from:#search-input, search from:#search-input, change from:#channel"
-                hx-push-url="true"
-                hx-target="#search-results">
+{% block title %}Search NixOS Packages{% endblock %}
 
-                <input
-                    class="rounded-full px-3 py-2 w-1/2 bg-gray-100" id="search-input"
-                    type="search" name="q" placeholder="begin typing to search..."
-                    value="{{search_value}}"
-                />
+{% block search_endpoint %}/search/packages{% endblock %}
 
-                <div class="px-3 py-2 m-3 bg-gray-50 rounded-full">
-                    <label class="pr-1" for="channel">Channel:</label>
-                    <select name="channel" id="channel">
-                        {% for branch in branches %}
-                        <option value="{{branch}}">{{branch}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </form>
-        </div>
-
-        <div class="flex justify-center p-4">
-            <div class="flex justify-center w-2/3">
-                <ul class="grow" id="search-results">
-                    {% include "package_item.html" %}
-                </ul>
-            </div>
-        </div>
-    </body>
-</html>
+{% block search_results %}
+{% include "package_item.html" %}
+{% endblock %}

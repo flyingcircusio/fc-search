@@ -21,7 +21,6 @@ type FCFruit = ((f32, f32), DocAddress);
 pub mod options;
 pub mod packages;
 
-#[allow(dead_code)]
 pub struct SearcherInner {
     schema: Schema,
     index: tantivy::Index,
@@ -233,14 +232,9 @@ pub trait Searcher {
                             .expect("value is text")
                             .to_string();
 
-                        let entry = self
-                            .entries()
+                        self.entries()
                             .get(&name)
-                            .expect("found option is not indexed");
-
-                        dbg!((_score, &entry));
-
-                        entry
+                            .expect("found option is not indexed")
                     })
                     .collect_vec()
             })

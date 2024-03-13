@@ -1,7 +1,7 @@
 {% for item in results %}
-<li class="my-4 p-2 border border-2 rounded">
+<li class="my-4 p-4 border border-1 rounded-md">
 
-    <p class="font-bold py-1">{{ item.attribute_name }}</p>
+    <p class="font-bold py-1 text-fc-green">{{ item.attribute_name }}</p>
 
     <p>{{ item.description.clone().unwrap_or_default() }}</p>
 
@@ -11,19 +11,14 @@
             {{ item.version.clone().unwrap_or_default() }}
         </code>
 
-        <p>Name</p>
-        <code class="col-span-6">
-            {{ item.name }}
-        </code>
-
-        <p>Default Output</p>
-        <code class="col-span-6">
-            {{ item.default_output }}
-        </code>
-
         <p>License</p>
         <code class="col-span-6">
-            {{ item.license.clone().unwrap_or_default() }}
+            {{ item.license.as_html()|safe }}
+        </code>
+
+        <p>Homepage</p>
+        <code class="col-span-6">
+            {{ item.homepage.as_html()|safe }}
         </code>
     </div>
 </li>
