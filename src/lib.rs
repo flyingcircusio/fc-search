@@ -134,7 +134,10 @@ impl Flake {
     }
 
     pub fn flake_uri(&self) -> String {
-        format!("github:{}/{}/{}", self.owner, self.name, self.branch)
+        match &self.rev {
+            FlakeRev::Specific(r) => format!("github:{}/{}?rev={r}", self.owner, self.name),
+            _ => format!("github:{}/{}/{}", self.owner, self.name, self.branch),
+        }
     }
 
     pub fn github_base_url(&self) -> String {
@@ -352,4 +355,14 @@ pub fn load_packages_and_options(
     let options = serde_json::from_str(&naive_options_raw)?;
     let packages = serde_json::from_str(&packages_raw)?;
     Ok((options, packages))
+}
+
+pub trait LogError<T> {
+    fn log_to_option(self, context: &str) -> Option<T>;
+}
+
+impl<T, E: Display> LogError<T> for Result<T, E> {
+    fn log_to_option(self, context: &str) -> Option<T> {
+        self.map_err(|e| error!("{}: {e}", context)).ok()
+    }
 }

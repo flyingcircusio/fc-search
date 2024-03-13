@@ -99,9 +99,6 @@ pub fn build_options_for_fcio_branch(
     HashMap<String, NaiveNixosOption>,
     HashMap<String, NixPackage>,
 )> {
-    anyhow::ensure!(flake.owner == "flyingcircusio");
-    anyhow::ensure!(flake.name == "fc-nixos");
-
     let eval_nixfile = {
         let data = NixFiles::get("eval.nix").unwrap().data;
         let mut tmp = tempfile::NamedTempFile::new()?;
@@ -112,7 +109,7 @@ pub fn build_options_for_fcio_branch(
     debug!("starting nix-instantiate");
     let derivation_cmd = Command::new("nix-instantiate")
         .arg(eval_nixfile.path())
-        .args(["--argstr", "branch", &flake.branch])
+        .args(["--argstr", "flake", &flake.flake_uri()])
         .output()?;
 
     drop(eval_nixfile);

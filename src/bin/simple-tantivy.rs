@@ -3,7 +3,7 @@ use fc_search::option_to_naive;
 use std::collections::HashMap;
 use tempfile::TempDir;
 
-use fc_search::search::{OptionsSearcher, Searcher};
+use fc_search::search::{options::OptionsSearcher, Searcher};
 
 fn main() -> anyhow::Result<()> {
     let index_path = TempDir::new()?;

@@ -71,17 +71,22 @@ impl AppState {
             let branch_path = state_dir.join(branchname.clone());
 
             debug!("starting searcher for branch {}", &branchname);
-            let searcher = ChannelSearcher::new(&branch_path, &flake);
+            let searcher = ChannelSearcher::new(&branch_path, flake);
 
             // attempt not to (re)build multiple channels at the same time by spreading them 5
             // minutes apart
-            let freq = Duration::from_hours(5);
             let weak = if start_timers {
+                let freq = Duration::from_hours(5);
                 let start_time = tokio::time::Instant::now() + Duration::from_mins(i as u64 * 5);
                 let interval = interval_at(start_time, freq);
                 searcher.start_timer(interval)
             } else {
-                let start_time = tokio::time::Instant::now() + Duration::from_days(100_000);
+                let start_time = if !searcher.active() {
+                    tokio::time::Instant::now()
+                } else {
+                    tokio::time::Instant::now() + Duration::from_days(100_000)
+                };
+                let freq = Duration::from_days(100_000);
                 let interval = interval_at(start_time, freq);
                 searcher.start_timer(interval)
             };
@@ -172,7 +177,12 @@ async fn search_options_handler<'a>(
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
-    let search_results = search_with_channel(&state, &form.channel, |c| c.search_options(&form.q));
+    let search_results = if !form.q.is_empty() {
+        search_with_channel(&state, &form.channel, |c| c.search_options(&form.q))
+    } else {
+        Vec::new()
+    };
+
     if headers.contains_key("HX-Request") {
         let template = OptionItemTemplate {
             results: search_results,
@@ -194,7 +204,11 @@ async fn search_packages_handler<'a>(
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
-    let search_results = search_with_channel(&state, &form.channel, |c| c.search_packages(&form.q));
+    let search_results = if !form.q.is_empty() {
+        search_with_channel(&state, &form.channel, |c| c.search_packages(&form.q))
+    } else {
+        Vec::new()
+    };
 
     if headers.contains_key("HX-Request") {
         let template = PackageItemTemplate {

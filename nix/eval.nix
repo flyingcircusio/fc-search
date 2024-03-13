@@ -1,6 +1,6 @@
-{branch}: let
+{flake}: let
   system = builtins.currentSystem;
-  fc-nixos = builtins.getFlake "github:flyingcircusio/fc-nixos/${branch}";
+  fc-nixos = builtins.getFlake flake;
 
   versions_json =
     if builtins.pathExists "${fc-nixos}/release/versions.json"

@@ -4,14 +4,18 @@ iterations: 5000
 rampup: 2
 
 plan:
-  - name: Fetch overview
-    request:
-      url: /
-
   - name: Search options
     request:
       url: /search/options?q=nginx
 
+  - name: Search short option
+    request:
+      url: /search/options?q=nix
+
   - name: Search packages
     request:
       url: /search/packages?q=nginx
+
+  - name: Search short package
+    request:
+      url: /search/packages?q=nix
