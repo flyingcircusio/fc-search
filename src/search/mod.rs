@@ -213,10 +213,8 @@ pub trait Searcher {
         };
 
         let searcher = inner.reader.searcher();
-        let results = {
-            let query = self.parse_query(query);
-            searcher.search(&query, &self.collector())
-        };
+        let query = self.parse_query(query);
+        let results = searcher.search(&query, &self.collector());
 
         results
             .ok()
@@ -231,6 +229,8 @@ pub trait Searcher {
                             .as_text()
                             .expect("value is text")
                             .to_string();
+
+                        //dbg!((&name, &query.explain(&searcher, doc_address)));
 
                         self.entries()
                             .get(&name)

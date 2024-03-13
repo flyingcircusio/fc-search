@@ -53,43 +53,76 @@ impl Searcher for PackagesSearcher {
             unreachable!("searcher not initialized, cannot parse");
         };
 
-        let qlen = query_string.len();
-
         let attribute_name = inner.schema.get_field("attribute_name").unwrap();
+        let description = inner.schema.get_field("description").unwrap();
+        let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
-        let term = Term::from_field_text(attribute_name, query_string);
+        for (i, word) in query_string.split(" ").enumerate() {
+            // words further back in the query get assigned less importance
+            let length_loss = 1. - i as f32 / 10.;
 
-        let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![(
-            Occur::Should,
-            Box::new(BoostQuery::new(
-                Box::new(TermQuery::new(
-                    term.clone(),
-                    tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
-                )),
-                1.3,
-            )),
-        )];
+            let qlen = word.len();
 
-        if let Ok(regex_query) = RegexQuery::from_pattern(query_string, attribute_name) {
+            let name_term = Term::from_field_text(attribute_name, word);
+            let description_term = Term::from_field_text(description, word);
+
+            // search for exact fit on the name field, highest priority
             subqueries.push((
                 Occur::Should,
-                Box::new(BoostQuery::new(Box::new(regex_query), 1.5)),
+                Box::new(BoostQuery::new(
+                    Box::new(TermQuery::new(
+                        name_term.clone(),
+                        tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+                    )),
+                    1.3,
+                )),
             ));
-        }
 
-        if qlen > 1 {
-            let fq = FuzzyTermQuery::new_prefix(term.clone(), 0, true);
-            subqueries.push((Occur::Should, Box::new(BoostQuery::new(Box::new(fq), 1.2))));
-        }
+            // search for possible regex matches on the name field
+            if let Ok(regex_query) = RegexQuery::from_pattern(query_string, attribute_name) {
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(Box::new(regex_query), 1.2 * length_loss)),
+                ));
+            }
 
-        if qlen > 2 {
-            let fq = FuzzyTermQuery::new_prefix(term.clone(), 1, true);
-            subqueries.push((Occur::Should, Box::new(BoostQuery::new(Box::new(fq), 1.1))));
-        }
+            // fuzzily search on the name field
+            if qlen > 1 {
+                let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 0, true);
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(Box::new(fq), 1.1 * length_loss)),
+                ));
+            }
 
-        if qlen > 3 {
-            let fq = FuzzyTermQuery::new_prefix(term.clone(), 2, true);
-            subqueries.push((Occur::Should, Box::new(BoostQuery::new(Box::new(fq), 1.0))));
+            if qlen > 2 {
+                let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 1, true);
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(Box::new(fq), length_loss)),
+                ));
+            }
+
+            // search for exact fit on the description field
+            // similar priority to a fuzzy search on the name field
+            subqueries.push((
+                Occur::Should,
+                Box::new(BoostQuery::new(
+                    Box::new(TermQuery::new(
+                        description_term.clone(),
+                        tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+                    )),
+                    1.2 * length_loss,
+                )),
+            ));
+
+            if qlen > 2 {
+                let fq = FuzzyTermQuery::new_prefix(description_term.clone(), 1, true);
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(Box::new(fq), length_loss)),
+                ));
+            }
         }
 
         Box::new(BooleanQuery::new(subqueries))
@@ -108,7 +141,6 @@ impl Searcher for PackagesSearcher {
             .set_stored();
 
         let attribute_name = schema_builder.add_text_field("attribute_name", raw_stored);
-        schema_builder.add_text_field("name", TEXT);
         schema_builder.add_text_field("description", TEXT);
         let schema = schema_builder.build();
 
@@ -143,9 +175,6 @@ impl Searcher for PackagesSearcher {
         let attribute_name = schema
             .get_field("attribute_name")
             .expect("the field attribute_name should exist");
-        let name = schema
-            .get_field("name")
-            .expect("the field name should exist");
         let description = schema
             .get_field("description")
             .expect("the field description should exist");
@@ -156,7 +185,6 @@ impl Searcher for PackagesSearcher {
         for (aname, package) in &entries {
             let mut document = Document::default();
             document.add_text(attribute_name, aname.clone());
-            document.add_text(name, package.name.clone());
             document.add_text(description, package.description.clone().unwrap_or_default());
             index_writer.add_document(document)?;
         }
@@ -167,7 +195,7 @@ impl Searcher for PackagesSearcher {
     }
 
     fn collector(&self) -> impl Collector<Fruit = Vec<FCFruit>> {
-        TopDocs::with_limit(10).tweak_score(move |segment_reader: &SegmentReader| {
+        TopDocs::with_limit(20).tweak_score(move |segment_reader: &SegmentReader| {
             let store_reader = segment_reader.get_store_reader(10).unwrap();
             move |doc: DocId, score: Score| {
                 let d = store_reader.get(doc).unwrap();

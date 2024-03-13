@@ -2,12 +2,14 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use tantivy::collector::{Collector, TopDocs};
-use tantivy::query::{Query, QueryParser};
+use tantivy::query::{
+    BooleanQuery, BoostQuery, ConstScoreQuery, FuzzyTermQuery, Occur, Query, TermQuery,
+};
 use tantivy::schema::{Facet, FacetOptions, Schema, TextOptions, TEXT};
-use tantivy::{DocId, Document, Score, SegmentReader};
+use tantivy::{DocId, Document, Score, SegmentReader, Term};
 
 use super::{open_or_create_index, FCFruit, Searcher, SearcherInner};
-use crate::NaiveNixosOption;
+use crate::{LogValue, NaiveNixosOption};
 
 pub struct OptionsSearcher {
     pub index_path: PathBuf,
@@ -50,19 +52,70 @@ impl Searcher for OptionsSearcher {
         let Some(ref inner) = self.inner else {
             unreachable!("searcher not initialized, cannot parse");
         };
+        let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
-        let name = inner.schema.get_field("name").unwrap();
-        let attribute_name = inner.schema.get_field("attribute_name").unwrap();
+        let name_field = inner.schema.get_field("name").unwrap();
+        for (i, word) in query_string.split(" ").enumerate() {
+            let qlen = word.len();
+            let name_term = Term::from_field_text(name_field, word);
 
-        let query_parser = Box::new(QueryParser::for_index(
-            &inner.index,
-            vec![name, attribute_name],
-        ));
-        //query_parser.set_field_fuzzy(name, true, 1, true);
-        //query_parser.set_field_boost(name, 5.0);
-        //query_parser.set_conjunction_by_default();
+            // words further back in the query get assigned less importance
+            let length_loss = 1. - i as f32 / 10.;
 
-        query_parser.parse_query_lenient(query_string).0
+            // search for exact fit on the name field, highest priority
+            subqueries.push((
+                Occur::Should,
+                Box::new(BoostQuery::new(
+                    Box::new(TermQuery::new(
+                        name_term.clone(),
+                        tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+                    )),
+                    1.5 * length_loss,
+                )),
+            ));
+
+            // fuzzily search on the name field
+            let fq =
+                FuzzyTermQuery::new_prefix(name_term.clone(), qlen.clamp(2, 4) as u8 - 2, true);
+            subqueries.push((Occur::Should, Box::new(BoostQuery::new(Box::new(fq), 2.2))));
+        }
+
+        //description queries
+        let mut description_subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
+        let description_field = inner.schema.get_field("description").unwrap();
+        for (i, word) in query_string.split(" ").enumerate() {
+            let length_loss = 0.5 - i as f32 / 10.;
+            let qlen = word.len();
+            let description_term = Term::from_field_text(description_field, word);
+
+            // search for exact fit on the description field
+            description_subqueries.push((
+                Occur::Should,
+                Box::new(ConstScoreQuery::new(
+                    Box::new(TermQuery::new(
+                        description_term.clone(),
+                        tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+                    )),
+                    length_loss,
+                )),
+            ));
+
+            if qlen >= 3 {
+                let fq = FuzzyTermQuery::new_prefix(description_term.clone(), 1, false);
+                description_subqueries.push((
+                    Occur::Should,
+                    Box::new(ConstScoreQuery::new(Box::new(fq), 0.5 * length_loss)),
+                ));
+            }
+        }
+
+        let description_query =
+            BoostQuery::new(Box::new(BooleanQuery::new(description_subqueries)), 0.2);
+        subqueries.push((Occur::Should, Box::new(description_query)));
+
+        //println!("{:#?}", subqueries);
+
+        Box::new(BooleanQuery::new(subqueries))
     }
 
     /// creates the index and initializes the struct that holds
@@ -148,7 +201,7 @@ impl Searcher for OptionsSearcher {
     }
 
     fn collector(&self) -> impl Collector<Fruit = Vec<FCFruit>> {
-        TopDocs::with_limit(10).tweak_score(move |segment_reader: &SegmentReader| {
+        TopDocs::with_limit(20).tweak_score(move |segment_reader: &SegmentReader| {
             let store_reader = segment_reader.get_store_reader(100).unwrap();
 
             move |doc: DocId, mut score: Score| {
@@ -157,12 +210,16 @@ impl Searcher for OptionsSearcher {
 
                 let fcio_option = attribute_name.starts_with("flyingcircus");
                 let enable_option = attribute_name.ends_with("enable");
+                let roles_option = attribute_name.contains("roles");
 
                 if fcio_option {
-                    score *= 1.05;
+                    score *= 1.3;
                 }
                 if enable_option {
                     score *= 1.05;
+                }
+                if roles_option {
+                    score *= 0.8;
                 }
 
                 (score, 1.0)
