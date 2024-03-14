@@ -289,16 +289,22 @@ pub fn update_file_cache(
     Ok((options, packages))
 }
 
+#[tracing::instrument(skip(schema))]
 fn open_or_create_index(index_path: &Path, schema: &Schema) -> anyhow::Result<Index> {
-    let mut index_tmp = Index::open_or_create(
+    let index_tmp = Index::open_or_create(
         tantivy::directory::MmapDirectory::open(index_path).unwrap(),
         schema.clone(),
-    )?;
+    );
 
-    // recreate the schema if outdated
-    if *schema != index_tmp.schema() {
-        std::fs::remove_dir_all(index_path)?;
-        index_tmp = Index::create_in_dir(index_path, schema.clone())?;
+    match index_tmp {
+        Ok(i) => Ok(i),
+        Err(tantivy::TantivyError::SchemaError(e)) => {
+            error!("schema error: {e}");
+            debug!("deleting + recreating the old index");
+            std::fs::remove_dir_all(index_path)?;
+            std::fs::create_dir_all(index_path)?;
+            Ok(Index::create_in_dir(index_path, schema.clone())?)
+        }
+        Err(e) => unreachable!("unexpected error: {e}"),
     }
-    Ok(index_tmp)
 }

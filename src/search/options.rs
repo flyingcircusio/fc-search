@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use itertools::Itertools;
 use tantivy::collector::{Collector, TopDocs};
 use tantivy::query::{
-    BooleanQuery, BoostQuery, ConstScoreQuery, FuzzyTermQuery, Occur, Query, TermQuery,
+    BooleanQuery, BoostQuery, ConstScoreQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, TermQuery,
 };
-use tantivy::schema::{Facet, FacetOptions, Schema, TextOptions, TEXT};
+use tantivy::schema::{Facet, FacetOptions, Schema, TextFieldIndexing, TextOptions, TEXT};
+use tantivy::tokenizer::{TextAnalyzer, WhitespaceTokenizer};
 use tantivy::{DocId, Document, Score, SegmentReader, Term};
 
 use super::{open_or_create_index, FCFruit, Searcher, SearcherInner};
-use crate::{LogValue, NaiveNixosOption};
+use crate::NaiveNixosOption;
 
 pub struct OptionsSearcher {
     pub index_path: PathBuf,
@@ -31,6 +33,7 @@ impl OptionsSearcher {
         options: HashMap<String, NaiveNixosOption>,
     ) -> anyhow::Result<Self> {
         let mut ret = Self::new(index_path);
+
         ret.create_index()?;
         ret.update_entries(options)?;
         Ok(ret)
@@ -63,16 +66,47 @@ impl Searcher for OptionsSearcher {
             let length_loss = 1. - i as f32 / 10.;
 
             // search for exact fit on the name field, highest priority
-            subqueries.push((
-                Occur::Should,
-                Box::new(BoostQuery::new(
-                    Box::new(TermQuery::new(
-                        name_term.clone(),
-                        tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+            if word.contains('.') {
+                let subterms = word
+                    .split('.')
+                    .map(|p| Term::from_field_text(name_field, p))
+                    .collect_vec();
+
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(
+                        Box::new(PhraseQuery::new(subterms.clone())),
+                        1.5 * length_loss,
                     )),
-                    1.5 * length_loss,
-                )),
-            ));
+                ));
+
+                let mut fz_sqs: Vec<(Occur, Box<dyn Query>)> = vec![];
+                subterms.into_iter().for_each(|t| {
+                    fz_sqs.push((
+                        Occur::Should,
+                        Box::new(FuzzyTermQuery::new_prefix(t, 0, false)),
+                    ))
+                });
+
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(
+                        Box::new(BooleanQuery::new(fz_sqs)),
+                        3. * length_loss,
+                    )),
+                ))
+            } else {
+                subqueries.push((
+                    Occur::Should,
+                    Box::new(BoostQuery::new(
+                        Box::new(TermQuery::new(
+                            name_term.clone(),
+                            tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+                        )),
+                        1.5 * length_loss,
+                    )),
+                ));
+            }
 
             // fuzzily search on the name field
             let fq =
@@ -113,8 +147,6 @@ impl Searcher for OptionsSearcher {
             BoostQuery::new(Box::new(BooleanQuery::new(description_subqueries)), 0.2);
         subqueries.push((Occur::Should, Box::new(description_query)));
 
-        //println!("{:#?}", subqueries);
-
         Box::new(BooleanQuery::new(subqueries))
     }
 
@@ -123,6 +155,12 @@ impl Searcher for OptionsSearcher {
     #[tracing::instrument(skip(self))]
     fn create_index(&mut self) -> anyhow::Result<()> {
         let mut schema_builder = Schema::builder();
+
+        let name_field_options = TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_index_option(tantivy::schema::IndexRecordOption::WithFreqsAndPositions)
+                .set_tokenizer("option_name"),
+        );
 
         // name of the option, stored to access it's data from the searcher's hashmap
         let attribute_name = schema_builder.add_text_field(
@@ -134,13 +172,17 @@ impl Searcher for OptionsSearcher {
         schema_builder.add_facet_field("name_facet", FacetOptions::default());
 
         // split up name of the option for search
-        schema_builder.add_text_field("name", TEXT);
+        schema_builder.add_text_field("name", name_field_options);
 
         // description
         schema_builder.add_text_field("description", TEXT);
 
         let schema = schema_builder.build();
+
         let index = open_or_create_index(&self.index_path, &schema)?;
+
+        let options_tk = TextAnalyzer::builder(WhitespaceTokenizer::default()).build();
+        index.tokenizers().register("option_name", options_tk);
 
         let reader = index
             .reader_builder()

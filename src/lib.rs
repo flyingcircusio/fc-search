@@ -375,20 +375,3 @@ impl<T, E: Display> LogError<T> for Result<T, E> {
         self.map_err(|e| error!("{}: {e}", context)).ok()
     }
 }
-
-pub trait LogValue<T> {
-    fn debug_log(self) -> Self;
-    fn debug_log_with_context(self, context: &str) -> Self;
-}
-
-impl<T: std::fmt::Debug> LogValue<T> for T {
-    fn debug_log(self) -> Self {
-        debug!("{:?}", self);
-        self
-    }
-
-    fn debug_log_with_context(self, context: &str) -> Self {
-        debug!("{}: {:?}", context, self);
-        self
-    }
-}
