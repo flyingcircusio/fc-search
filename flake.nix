@@ -75,12 +75,11 @@
           {
             packages =
               (old.packages or [])
-              ++ [pkgs.bacon pkgs.samply pkgs.tailwindcss pkgs.drill];
+              ++ [pkgs.bacon pkgs.samply pkgs.tailwindcss pkgs.drill pkgs.wrk pkgs.inferno pkgs.tokio-console];
             shellHook = ''
               ${old.shellHook or ""}
               ${config.pre-commit.installationScript}
             '';
-            RUST_LOG = "fc_search=debug";
           }
           // (pkgs.lib.optionalAttrs (system == "aarch64-linux") {
             # use mold in the devshell on aarch64-linux for quicker iteration
@@ -89,7 +88,7 @@
               (pkgs.lib.makeLibraryPath [pkgs.openssl])
             }";
             CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.llvmPackages.clangUseLLVM}/bin/clang";
-            RUSTFLAGS = "-Clink-arg=-fuse-ld=${pkgs.mold}/bin/mold -Zthreads=0 -Zshare-generics=n";
+            RUSTFLAGS = "--cfg tokio_unstable -Clink-arg=-fuse-ld=${pkgs.mold}/bin/mold -Zthreads=0 -Zshare-generics=n";
           }));
       };
     };

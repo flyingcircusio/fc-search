@@ -7,6 +7,9 @@ command = [
     "cargo", "run",
     "--bin", "fc-search",
     "--color", "always",
+    "--",
+    "--test",
+    "--state-dir", "./test-state-dir"
 ]
 need_stdout = true
 watch = ["templates", "src"]

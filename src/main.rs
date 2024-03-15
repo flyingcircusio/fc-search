@@ -34,13 +34,18 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "with_axum_htmx_askama=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    // enable tokio-console for testing
+    if args.test {
+        console_subscriber::init();
+    } else {
+        tracing_subscriber::registry()
+            .with(
+                tracing_subscriber::EnvFilter::try_from_default_env()
+                    .unwrap_or_else(|_| "fc_search=debug,tokio=trace,runtime=trace".into()),
+            )
+            .with(tracing_subscriber::fmt::layer())
+            .init();
+    }
 
     if let Some(state_dir) = args.state_dir {
         info!("Persistent state dir is {}", state_dir.display());

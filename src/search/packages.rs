@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 
 use tantivy::collector::{Collector, TopDocs};
 use tantivy::query::{
@@ -8,45 +7,11 @@ use tantivy::query::{
 use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, TEXT};
 use tantivy::{DocId, Document, Score, SegmentReader, Term};
 
-use super::{open_or_create_index, FCFruit, Searcher, SearcherInner};
+use super::{open_or_create_index, FCFruit, GenericSearcher, Searcher, SearcherInner};
 use crate::nix::NixPackage;
 
-pub struct PackagesSearcher {
-    pub index_path: PathBuf,
-    pub packages: HashMap<String, NixPackage>,
-    inner: Option<SearcherInner>,
-}
-
-impl PackagesSearcher {
-    pub fn new(index_path: &Path) -> Self {
-        Self {
-            index_path: index_path.to_path_buf(),
-            packages: HashMap::new(),
-            inner: None,
-        }
-    }
-
-    pub fn new_with_packages(
-        index_path: &Path,
-        packages: HashMap<String, NixPackage>,
-    ) -> anyhow::Result<Self> {
-        let mut ret = Self::new(index_path);
-        ret.create_index()?;
-        ret.update_entries(packages)?;
-        Ok(ret)
-    }
-}
-
-impl Searcher for PackagesSearcher {
+impl Searcher for GenericSearcher<NixPackage> {
     type Item = NixPackage;
-
-    fn entries(&self) -> &HashMap<String, Self::Item> {
-        &self.packages
-    }
-
-    fn inner(&self) -> Option<&SearcherInner> {
-        self.inner.as_ref()
-    }
 
     fn parse_query(&self, query_string: &str) -> Box<dyn Query> {
         let Some(ref inner) = self.inner else {
@@ -57,7 +22,7 @@ impl Searcher for PackagesSearcher {
         let description = inner.schema.get_field("description").unwrap();
         let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
-        for (i, word) in query_string.split(" ").enumerate() {
+        for (i, word) in query_string.split(' ').enumerate() {
             // words further back in the query get assigned less importance
             let length_loss = 1. - i as f32 / 10.;
 
@@ -128,7 +93,6 @@ impl Searcher for PackagesSearcher {
         Box::new(BooleanQuery::new(subqueries))
     }
 
-    #[tracing::instrument(skip(self))]
     fn create_index(&mut self) -> anyhow::Result<()> {
         let mut schema_builder = Schema::builder();
 
@@ -152,7 +116,7 @@ impl Searcher for PackagesSearcher {
             .try_into()
             .unwrap();
 
-        self.packages = HashMap::new();
+        self.map = HashMap::new();
         self.inner = Some(SearcherInner {
             schema,
             index,
@@ -190,7 +154,7 @@ impl Searcher for PackagesSearcher {
         }
 
         index_writer.commit()?;
-        self.packages = entries;
+        self.map = entries;
         Ok(())
     }
 

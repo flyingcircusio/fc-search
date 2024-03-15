@@ -5,8 +5,6 @@ pub mod search;
 
 use nix::NixosOption;
 
-use std::path::Path;
-
 use itertools::Itertools;
 use reqwest::header::HeaderMap;
 use reqwest::Client;
@@ -16,7 +14,7 @@ use std::fmt::Display;
 use tracing::{debug, error, info, warn};
 use url::Url;
 
-use self::nix::{Expression, NixPackage};
+use self::nix::Expression;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NaiveNixosOption {
@@ -126,7 +124,6 @@ struct GithubBranchInfo {
 }
 
 impl Flake {
-    #[tracing::instrument]
     pub async fn new(owner: &str, name: &str, branch: &str) -> anyhow::Result<Self> {
         let rev = Self::get_latest_rev(owner, name, branch)
             .await
@@ -324,46 +321,6 @@ pub fn option_to_naive(
         );
     }
     out
-}
-
-#[tracing::instrument]
-pub fn load_packages_and_options(
-    branch_path: &Path,
-    flake: &Flake,
-) -> anyhow::Result<(
-    HashMap<String, NaiveNixosOption>,
-    HashMap<String, NixPackage>,
-)> {
-    anyhow::ensure!(
-        branch_path.exists(),
-        "failed to load branch for channel searcher. path {} does not exist",
-        branch_path.display()
-    );
-
-    if flake.rev != FlakeRev::FallbackToCached {
-        let saved_flake: Flake = serde_json::from_str(&std::fs::read_to_string(
-            branch_path.join("flake_info.json"),
-        )?)?;
-
-        // rebuild options if the revision is not cached or the cached rev is "latest"
-        if saved_flake.rev == FlakeRev::Latest || saved_flake.rev != flake.rev {
-            warn!(
-                "saved flake rev != requested flake ref: {:?} != {:?}",
-                saved_flake.rev, flake.rev
-            );
-            info!("channel info is outdated, need to rebuild");
-            anyhow::bail!("rebuild the options");
-        }
-        info!("loading options from cache");
-    } else {
-        info!("falling back to cached options");
-    }
-
-    let naive_options_raw = std::fs::read_to_string(branch_path.join("options.json"))?;
-    let packages_raw = std::fs::read_to_string(branch_path.join("packages.json"))?;
-    let options = serde_json::from_str(&naive_options_raw)?;
-    let packages = serde_json::from_str(&packages_raw)?;
-    Ok((options, packages))
 }
 
 pub trait LogError<T> {

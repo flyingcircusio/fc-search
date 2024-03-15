@@ -1,9 +1,8 @@
 use fc_search::nix::NixosOption;
-use fc_search::option_to_naive;
+use fc_search::search::GenericSearcher;
+use fc_search::{option_to_naive, NaiveNixosOption};
 use std::collections::HashMap;
 use tempfile::TempDir;
-
-use fc_search::search::{options::OptionsSearcher, Searcher};
 
 fn main() -> anyhow::Result<()> {
     let index_path = TempDir::new()?;
@@ -14,7 +13,8 @@ fn main() -> anyhow::Result<()> {
         option_to_naive(&options)
     };
 
-    let searcher = OptionsSearcher::new_with_options(index_path.path(), naive_options)?;
+    let searcher =
+        GenericSearcher::<NaiveNixosOption>::new_with_values(index_path.path(), naive_options)?;
     let results = searcher.search_entries("flyingcircus.roles.devhost enable");
 
     dbg!(&results);

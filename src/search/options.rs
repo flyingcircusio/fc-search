@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-
 use itertools::Itertools;
+use std::collections::HashMap;
 use tantivy::collector::{Collector, TopDocs};
 use tantivy::query::{
     BooleanQuery, BoostQuery, ConstScoreQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, TermQuery,
@@ -10,46 +8,11 @@ use tantivy::schema::{Facet, FacetOptions, Schema, TextFieldIndexing, TextOption
 use tantivy::tokenizer::{TextAnalyzer, WhitespaceTokenizer};
 use tantivy::{DocId, Document, Score, SegmentReader, Term};
 
-use super::{open_or_create_index, FCFruit, Searcher, SearcherInner};
+use super::{open_or_create_index, FCFruit, GenericSearcher, Searcher, SearcherInner};
 use crate::NaiveNixosOption;
 
-pub struct OptionsSearcher {
-    pub index_path: PathBuf,
-    pub options: HashMap<String, NaiveNixosOption>,
-    inner: Option<SearcherInner>,
-}
-
-impl OptionsSearcher {
-    pub fn new(index_path: &Path) -> Self {
-        Self {
-            index_path: index_path.to_path_buf(),
-            options: HashMap::new(),
-            inner: None,
-        }
-    }
-
-    pub fn new_with_options(
-        index_path: &Path,
-        options: HashMap<String, NaiveNixosOption>,
-    ) -> anyhow::Result<Self> {
-        let mut ret = Self::new(index_path);
-
-        ret.create_index()?;
-        ret.update_entries(options)?;
-        Ok(ret)
-    }
-}
-
-impl Searcher for OptionsSearcher {
+impl Searcher for GenericSearcher<NaiveNixosOption> {
     type Item = NaiveNixosOption;
-
-    fn entries(&self) -> &HashMap<String, Self::Item> {
-        &self.options
-    }
-
-    fn inner(&self) -> Option<&SearcherInner> {
-        self.inner.as_ref()
-    }
 
     fn parse_query(&self, query_string: &str) -> Box<dyn Query> {
         let Some(ref inner) = self.inner else {
@@ -58,7 +21,7 @@ impl Searcher for OptionsSearcher {
         let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
         let name_field = inner.schema.get_field("name").unwrap();
-        for (i, word) in query_string.split(" ").enumerate() {
+        for (i, word) in query_string.split(' ').enumerate() {
             let qlen = word.len();
             let name_term = Term::from_field_text(name_field, word);
 
@@ -117,7 +80,7 @@ impl Searcher for OptionsSearcher {
         //description queries
         let mut description_subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
         let description_field = inner.schema.get_field("description").unwrap();
-        for (i, word) in query_string.split(" ").enumerate() {
+        for (i, word) in query_string.split(' ').enumerate() {
             let length_loss = 0.5 - i as f32 / 10.;
             let qlen = word.len();
             let description_term = Term::from_field_text(description_field, word);
@@ -152,7 +115,6 @@ impl Searcher for OptionsSearcher {
 
     /// creates the index and initializes the struct that holds
     /// fields that are important for searching
-    #[tracing::instrument(skip(self))]
     fn create_index(&mut self) -> anyhow::Result<()> {
         let mut schema_builder = Schema::builder();
 
@@ -190,7 +152,7 @@ impl Searcher for OptionsSearcher {
             .try_into()
             .unwrap();
 
-        self.options = HashMap::new();
+        self.map = HashMap::new();
         self.inner = Some(SearcherInner {
             schema,
             index,
@@ -238,7 +200,7 @@ impl Searcher for OptionsSearcher {
         }
 
         index_writer.commit()?;
-        self.options = entries;
+        self.map = entries;
         Ok(())
     }
 

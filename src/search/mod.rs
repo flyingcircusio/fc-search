@@ -2,25 +2,21 @@ use anyhow::Context;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, Weak};
 use tantivy::collector::Collector;
 use tantivy::query::Query;
 use tantivy::schema::{Field, Schema};
 use tantivy::{DocAddress, Index};
-use tokio::time::Interval;
 use tracing::{debug, error, info};
 
 use crate::nix::{self, NixPackage};
 use crate::{Flake, LogError, NaiveNixosOption};
-
-use self::options::OptionsSearcher;
-use self::packages::PackagesSearcher;
 
 type FCFruit = ((f32, f32), DocAddress);
 
 pub mod options;
 pub mod packages;
 
+#[derive(Clone)]
 pub struct SearcherInner {
     schema: Schema,
     index: tantivy::Index,
@@ -28,14 +24,14 @@ pub struct SearcherInner {
     reference_field: Field,
 }
 
+#[derive(Clone)]
 struct ChannelSearcherInner {
-    options: OptionsSearcher,
-    packages: PackagesSearcher,
+    options: GenericSearcher<NaiveNixosOption>,
+    packages: GenericSearcher<NixPackage>,
 }
 
 impl ChannelSearcherInner {
     /// attempt to load cached options
-    #[tracing::instrument]
     pub fn maybe_load(branch_path: &Path) -> Option<Self> {
         let options = serde_json::from_str(
             &std::fs::read_to_string(branch_path.join("options.json"))
@@ -60,9 +56,10 @@ impl ChannelSearcherInner {
         let options_index_path = branch_path.join("tantivy");
         let package_index_path = branch_path.join("tantivy_packages");
 
-        let o_inner = OptionsSearcher::new_with_options(&options_index_path, options)
-            .log_to_option("creating new options searcher")?;
-        let p_inner = PackagesSearcher::new_with_packages(&package_index_path, packages)
+        let o_inner =
+            GenericSearcher::<NaiveNixosOption>::new_with_values(&options_index_path, options)
+                .log_to_option("creating new options searcher")?;
+        let p_inner = GenericSearcher::<NixPackage>::new_with_values(&package_index_path, packages)
             .log_to_option("creating new packages searcher")?;
         Some(Self {
             options: o_inner,
@@ -71,6 +68,7 @@ impl ChannelSearcherInner {
     }
 }
 
+#[derive(Clone)]
 pub struct ChannelSearcher {
     inner: Option<ChannelSearcherInner>,
 
@@ -80,134 +78,142 @@ pub struct ChannelSearcher {
 }
 
 impl ChannelSearcher {
-    pub fn active(&self) -> bool {
-        self.inner.is_some()
-    }
-
-    pub fn search_options(&self, q: &str) -> Vec<&NaiveNixosOption> {
-        self.inner
-            .as_ref()
-            .map(|i| i.options.search_entries(q))
-            .unwrap_or_default()
-    }
-
-    pub fn search_packages(&self, q: &str) -> Vec<&NixPackage> {
-        self.inner
-            .as_ref()
-            .map(|i| i.packages.search_entries(q))
-            .unwrap_or_default()
-    }
-
-    pub fn start_timer(self, mut interval: Interval) -> Weak<Mutex<Self>> {
-        info!("[{}] started timer", self.flake.branch);
-
-        let searcher = Arc::new(Mutex::new(self));
-        let ret = Arc::downgrade(&searcher);
-
-        tokio::spawn(async move {
-            loop {
-                interval.tick().await;
-                let (branch_path, f, active) = {
-                    let s = searcher.lock().unwrap();
-                    (s.branch_path.clone(), s.flake.clone(), s.active())
-                };
-                info!("[{}] starting update", f.branch);
-
-                let latest_rev = Flake::get_latest_rev(&f.owner, &f.name, &f.branch).await;
-                match latest_rev {
-                    Ok(new_flake_rev) if !active || new_flake_rev != f.rev => {
-                        if active {
-                            info!("[{}] found newer revision: {:?}", f.branch, new_flake_rev);
-                        } else {
-                            info!(
-                                "[{}] generating options for rev {:?}",
-                                f.branch, new_flake_rev
-                            );
-                        }
-
-                        match update_file_cache(&branch_path, &f) {
-                            Ok((options, packages)) => {
-                                info!("[{}] successfully updated branch", f.branch);
-
-                                if !active {
-                                    let inner = ChannelSearcherInner::new_with_values(
-                                        &branch_path,
-                                        options,
-                                        packages,
-                                    );
-
-                                    let mut s = searcher.lock().unwrap();
-                                    s.flake.rev = new_flake_rev;
-                                    s.inner = inner;
-                                } else {
-                                    let mut s = searcher.lock().unwrap();
-                                    // this is guaranteed to be true after the `active` check from above
-                                    // but the type system insists on unpacking it
-                                    // since this is not a critical path, unsafe unwrapping is not
-                                    // warranted
-                                    if let Some(ref mut i) = &mut s.inner {
-                                        i.options
-                                            .update_entries(options)
-                                            .expect("could not update options");
-                                        i.packages
-                                            .update_entries(packages)
-                                            .expect("could not update packages");
-                                    } else {
-                                        unreachable!(
-                                            "[{}] channel searcher is active but inner is not some",
-                                            f.branch
-                                        );
-                                    }
-                                }
-                            }
-                            Err(e) => error!("[{}] error updating branch: {}", f.branch, e),
-                        };
-                    }
-                    Ok(_) => info!("[{}] already up-to-date", f.branch),
-                    Err(e) => error!("[{}] error getting the newest commit: {}", f.branch, e),
-                };
-
-                let period = interval.period();
-                info!(
-                    "[{}] next tick in {:?}h {:?}m",
-                    f.branch,
-                    period.as_secs() / (60 * 60),
-                    (period.as_secs() / 60) % 60
-                );
-            }
-        });
-        ret
-    }
-
+    #[tracing::instrument(skip(branch_path, flake), fields(branch = flake.branch))]
     pub fn new(branch_path: &Path, flake: &Flake) -> Self {
         let inner = ChannelSearcherInner::maybe_load(branch_path);
         if inner.is_some() {
-            debug!("[{}] loaded the channel from cache", flake.branch);
+            debug!("loaded the channel from cache");
         } else {
-            debug!("[{}] could not load the channel from cache", flake.branch);
+            debug!("could not load the channel from cache");
         }
+
         Self {
             inner,
             branch_path: branch_path.to_path_buf(),
             flake: flake.clone(),
         }
     }
+
+    pub fn active(&self) -> bool {
+        self.inner.is_some()
+    }
+
+    pub fn search_options(&self, q: &str) -> Vec<NaiveNixosOption> {
+        self.inner
+            .as_ref()
+            .map(|i| i.options.search_entries(q))
+            .unwrap_or_default()
+    }
+
+    pub fn search_packages(&self, q: &str) -> Vec<NixPackage> {
+        self.inner
+            .as_ref()
+            .map(|i| i.packages.search_entries(q))
+            .unwrap_or_default()
+    }
+
+    #[tracing::instrument(skip(self), fields(branch = self.flake.branch))]
+    pub async fn update(&mut self) -> anyhow::Result<()> {
+        //anyhow::bail!("test error for logging");
+        let active = self.active();
+        let latest_rev =
+            Flake::get_latest_rev(&self.flake.owner, &self.flake.name, &self.flake.branch).await;
+        match latest_rev {
+            Ok(new_flake_rev) if !active || new_flake_rev != self.flake.rev => {
+                if active {
+                    info!("current rev is {:?}", self.flake.rev);
+                    info!("found newer revision: {:?}", new_flake_rev);
+                } else {
+                    info!("generating options for rev {:?}", new_flake_rev);
+                }
+
+                let mut new_flake = self.flake.clone();
+                new_flake.rev = new_flake_rev;
+                match update_file_cache(&self.branch_path, &new_flake) {
+                    Ok((options, packages)) => {
+                        info!("successfully updated file cache");
+
+                        if !active {
+                            let inner = ChannelSearcherInner::new_with_values(
+                                &self.branch_path,
+                                options,
+                                packages,
+                            );
+
+                            self.flake = new_flake;
+                            self.inner = inner;
+                        } else {
+                            // this is guaranteed to be true after the `active` check from above
+                            // but the type system insists on unpacking it
+                            // since this is not a critical path, unsafe unwrapping is not
+                            // warranted
+                            if let Some(ref mut i) = &mut self.inner {
+                                i.options
+                                    .update_entries(options)
+                                    .context("could not update options")?;
+                                i.packages
+                                    .update_entries(packages)
+                                    .context("could not update packages")?;
+                            } else {
+                                unreachable!("channel searcher is active but inner is not some");
+                            }
+                        }
+                    }
+                    Err(e) => error!("error updating branch: {}", e),
+                };
+            }
+            Ok(_) => info!("already up-to-date"),
+            Err(e) => error!("error getting the newest commit: {}", e),
+        };
+
+        Ok(())
+    }
 }
 
-pub trait Searcher {
-    type Item;
+#[derive(Clone)]
+pub struct GenericSearcher<Item> {
+    pub index_path: PathBuf,
+    pub map: HashMap<String, Item>,
+    inner: Option<SearcherInner>,
+}
 
-    fn load(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()> {
+impl<Item> GenericSearcher<Item> {
+    pub fn new(index_path: &Path) -> Self {
+        Self {
+            index_path: index_path.to_path_buf(),
+            map: HashMap::new(),
+            inner: None,
+        }
+    }
+
+    pub fn new_with_values(
+        index_path: &Path,
+        entries: HashMap<String, Item>,
+    ) -> anyhow::Result<Self>
+    where
+        Self: Searcher<Item = Item>,
+    {
+        let mut ret = Self::new(index_path);
+        ret.create_index()?;
+        ret.update_entries(entries)?;
+        Ok(ret)
+    }
+
+    pub fn load(&mut self, entries: HashMap<String, Item>) -> anyhow::Result<()>
+    where
+        Self: Searcher<Item = Item>,
+    {
         self.create_index()?;
         self.update_entries(entries)?;
         Ok(())
     }
 
-    fn search_entries(&self, query: &str) -> Vec<&Self::Item>
+    pub fn search_entries(&self, query: &str) -> Vec<Item>
     where
-        Self::Item: std::fmt::Debug,
+        Item: std::fmt::Debug + Clone,
+        Self: Searcher,
     {
-        let Some(inner) = self.inner() else {
+        let Some(ref inner) = self.inner else {
             error!("searcher not initialized yet, please call create_index first");
             return Vec::new();
         };
@@ -232,25 +238,30 @@ pub trait Searcher {
 
                         //dbg!((&name, &query.explain(&searcher, doc_address)));
 
-                        self.entries()
+                        let entry: Item = self
+                            .map
                             .get(&name)
                             .expect("found option is not indexed")
+                            .clone();
+                        entry
                     })
                     .collect_vec()
             })
             .unwrap_or_default()
     }
+}
 
+pub trait Searcher {
+    type Item;
+
+    // TODO these depend on the underlying generic type...
+    // find a better way to implement this
     fn parse_query(&self, query_string: &str) -> Box<dyn Query>;
     fn create_index(&mut self) -> anyhow::Result<()>;
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()>;
-    fn entries(&self) -> &HashMap<String, Self::Item>;
-
-    fn inner(&self) -> Option<&SearcherInner>;
     fn collector(&self) -> impl Collector<Fruit = Vec<FCFruit>>;
 }
 
-#[tracing::instrument(skip(branch_path))]
 pub fn update_file_cache(
     branch_path: &Path,
     flake: &Flake,

@@ -11,6 +11,7 @@ askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 axum = { version = "0.7.4", features = ["macros"] }
 clap = { version = "4.5.1", features = ["derive"] }
+console-subscriber = "0.2.0"
 ctrlc = "3.4.2"
 itertools = "0.12.1"
 markdown = "1.0.0-alpha.16"
@@ -36,3 +37,10 @@ strip = "debuginfo"
 codegen-units = 1
 lto = true
 opt-level = 'z'
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[build]
+rustflags = ["--cfg", "tokio_unstable"]

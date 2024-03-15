@@ -1,12 +1,3 @@
-use rust_embed::RustEmbed;
-use std::{
-    collections::HashMap,
-    path::Path,
-    sync::{Arc, Mutex, Weak},
-    time::Duration,
-};
-use tokio::time::interval_at;
-
 use anyhow::Context;
 use askama::Template;
 use axum::{
@@ -16,49 +7,46 @@ use axum::{
     routing::get,
     Router,
 };
-use itertools::Itertools;
-use tracing::{debug, info};
-
 use fc_search::{
     get_fcio_flake_uris, nix::NixPackage, search::ChannelSearcher, Flake, NaiveNixosOption, NixHtml,
 };
-
+use itertools::Itertools;
+use rust_embed::RustEmbed;
 use serde::Deserialize;
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
+use tokio::time::interval;
+use tracing::{debug, error, info};
 
 #[derive(Clone)]
 struct AppState {
     // Arc to prevent clones for every request, just need read access in the search handler
-    channels: Arc<HashMap<String, Weak<Mutex<ChannelSearcher>>>>,
-}
-
-fn default_channel() -> String {
-    "fc-23.11-dev".to_string()
+    channels: Arc<HashMap<String, RwLock<ChannelSearcher>>>,
 }
 
 #[derive(Deserialize, Debug)]
 struct SearchForm {
     #[serde(default)]
     q: String,
-    #[serde(default = "default_channel")]
-    channel: String,
+    channel: Option<String>,
 }
 
 impl AppState {
-    fn active_branches(&self) -> Vec<&String> {
-        self.channels
-            .iter()
-            .filter(|(_, searcher)| {
-                searcher
-                    .upgrade()
-                    .and_then(|s| s.lock().map(|s| s.active()).ok())
-                    .unwrap_or(false)
-            })
-            .map(|(name, _)| name)
-            .sorted()
-            .collect_vec()
+    async fn active_branches(&self) -> Vec<&String> {
+        let mut channels = Vec::new();
+        for channel in self.channels.iter() {
+            if channel.1.read().unwrap().active() {
+                channels.push(channel.0)
+            }
+        }
+        channels
     }
 
-    fn in_dir(state_dir: &Path, branches: Vec<Flake>, start_timers: bool) -> anyhow::Result<Self> {
+    fn in_dir(state_dir: &Path, branches: Vec<Flake>) -> anyhow::Result<Self> {
         debug!("initializing app state");
 
         if !state_dir.exists() {
@@ -66,31 +54,27 @@ impl AppState {
         }
 
         let mut channels = HashMap::new();
-        for (i, flake) in branches.iter().enumerate() {
+        for mut flake in branches {
             let branchname = flake.branch.clone();
             let branch_path = state_dir.join(branchname.clone());
 
             debug!("starting searcher for branch {}", &branchname);
-            let searcher = ChannelSearcher::new(&branch_path, flake);
 
-            // attempt not to (re)build multiple channels at the same time by spreading them 5
-            // minutes apart
-            let weak = if start_timers {
-                let freq = Duration::from_hours(5);
-                let start_time = tokio::time::Instant::now() + Duration::from_mins(i as u64 * 5);
-                let interval = interval_at(start_time, freq);
-                searcher.start_timer(interval)
-            } else {
-                let start_time = if !searcher.active() {
-                    tokio::time::Instant::now()
-                } else {
-                    tokio::time::Instant::now() + Duration::from_days(100_000)
+            let flake_info_path = branch_path.join("flake_info.json");
+            if matches!(flake.rev, fc_search::FlakeRev::FallbackToCached)
+                && flake_info_path.exists()
+            {
+                if let Ok(saved_flake) = serde_json::from_str::<Flake>(
+                    &std::fs::read_to_string(flake_info_path)
+                        .expect("flake_info.json exists but could not be read"),
+                ) {
+                    info!("loaded flake from file cache: {:#?}", saved_flake);
+                    flake = saved_flake;
                 };
-                let freq = Duration::from_days(100_000);
-                let interval = interval_at(start_time, freq);
-                searcher.start_timer(interval)
-            };
-            channels.insert(branchname, weak);
+            }
+
+            let searcher = RwLock::new(ChannelSearcher::new(&branch_path, &flake));
+            channels.insert(branchname, searcher);
         }
 
         Ok(Self {
@@ -106,9 +90,7 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
                 owner: "flyingcircusio".to_string(),
                 name: "fc-nixos".to_string(),
                 branch: "fc-23.11-dev".to_string(),
-                rev: fc_search::FlakeRev::Specific(
-                    "62dd02d70222ffc1f3841fb8308952bedb2bfe96".to_string(),
-                ),
+                rev: fc_search::FlakeRev::FallbackToCached,
             }]
         };
 
@@ -121,7 +103,7 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
         };
 
         // in release mode try to load the cached index from disk
-        AppState::in_dir(state_dir, branches, !test)?
+        AppState::in_dir(state_dir, branches)?
     };
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
@@ -135,7 +117,7 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
         .route("/search/options", get(search_options_handler))
         .route("/search/packages", get(search_packages_handler))
         .route("/assets/*file", get(static_handler))
-        .with_state(state);
+        .with_state(state.clone());
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!(
@@ -143,42 +125,62 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
         listener.local_addr().unwrap()
     );
 
-    axum::serve(listener, router.into_make_service())
+    let updater_channels = state.channels.clone();
+    let updater_handle = if !test {
+        // run update loop in the background
+        tokio::spawn(async move {
+            let freq = Duration::from_hours(5);
+            let mut interval = interval(freq);
+            loop {
+                interval.tick().await;
+                for (branch, searcher) in updater_channels.iter() {
+                    update_channel(branch, searcher).await;
+                }
+            }
+        })
+    } else {
+        // just update once, no need for a timed update
+        tokio::spawn(async move {
+            for (branch, searcher) in updater_channels.iter() {
+                update_channel(branch, searcher).await;
+            }
+        })
+    };
+
+    if let Err(e) = axum::serve(listener, router.into_make_service())
         .await
-        .context("error while starting server")?;
-    Ok(())
+        .context("error while starting server")
+    {
+        let _ = updater_handle.abort();
+        Err(e)
+    } else {
+        Ok(())
+    }
 }
 
 async fn index_handler() -> impl IntoResponse {
     Redirect::permanent("/search").into_response()
 }
 
-fn search_with_channel<F, V>(state: &AppState, channel: &str, f: F) -> Vec<V>
-where
-    F: FnOnce(&ChannelSearcher) -> Vec<&V>,
-    V: Clone,
-{
-    state
-        .channels
-        .get(channel)
-        .and_then(|c| {
-            let channel = c.upgrade()?;
-            channel
-                .lock()
-                .map(|c| f(&c).into_iter().cloned().collect_vec())
-                .ok()
-        })
-        .unwrap_or_default()
-}
-
-#[tracing::instrument(skip(state, headers))]
 async fn search_options_handler<'a>(
     State(state): State<AppState>,
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
     let search_results = if !form.q.is_empty() {
-        search_with_channel(&state, &form.channel, |c| c.search_options(&form.q))
+        let channel = form.channel.as_ref().unwrap_or_else(|| {
+            state
+                .channels
+                .keys()
+                .sorted()
+                .next()
+                .context("no channels active")
+                .unwrap()
+        });
+        match state.channels.get(channel) {
+            Some(c) => c.read().unwrap().search_options(&form.q),
+            None => Vec::new(),
+        }
     } else {
         Vec::new()
     };
@@ -191,21 +193,32 @@ async fn search_options_handler<'a>(
     }
 
     HtmlTemplate(OptionsIndexTemplate {
-        branches: state.active_branches(),
+        branches: state.active_branches().await,
         results: search_results,
         search_value: &form.q,
     })
     .into_response()
 }
 
-#[tracing::instrument(skip(state))]
 async fn search_packages_handler<'a>(
     State(state): State<AppState>,
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
     let search_results = if !form.q.is_empty() {
-        search_with_channel(&state, &form.channel, |c| c.search_packages(&form.q))
+        let channel = form.channel.as_ref().unwrap_or_else(|| {
+            state
+                .channels
+                .keys()
+                .sorted()
+                .next()
+                .context("no channels active")
+                .unwrap()
+        });
+        match state.channels.get(channel) {
+            Some(c) => c.read().unwrap().search_packages(&form.q),
+            None => Vec::new(),
+        }
     } else {
         Vec::new()
     };
@@ -218,7 +231,7 @@ async fn search_packages_handler<'a>(
     }
 
     HtmlTemplate(PackagesIndexTemplate {
-        branches: state.active_branches(),
+        branches: state.active_branches().await,
         results: search_results,
         search_value: &form.q,
     })
@@ -300,6 +313,24 @@ where
                 format!("Failed to render template. Error: {}", err),
             )
                 .into_response(),
+        }
+    }
+}
+
+async fn update_channel(branch: &str, channel: &RwLock<ChannelSearcher>) {
+    // obtain the current searcher
+    let mut cs: ChannelSearcher = channel.read().unwrap().clone();
+
+    // no lock on the channel searcher here, so we can update it
+    // and replace the value on success while search is still running
+    // in an error case the old status is retained and the error logged
+    info!("starting update for branch {}", branch);
+    match cs.update().await {
+        Err(e) => error!("error updating branch {}: {e:?}", branch),
+        Ok(()) => {
+            // replace the old searcher with the updated one on success
+            let mut old = channel.write().unwrap();
+            *old = cs;
         }
     }
 }
