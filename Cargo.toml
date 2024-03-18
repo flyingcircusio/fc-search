@@ -33,14 +33,6 @@ url = { version = "2.5.0", features = ["serde"] }
 debug = 0
 strip = "debuginfo"
 
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = 'z'
-
 [profile.profiling]
 inherits = "release"
 debug = true
-
-[build]
-rustflags = ["--cfg", "tokio_unstable"]
