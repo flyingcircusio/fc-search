@@ -1,8 +1,12 @@
 {% extends "index.html" %}
 
-{% block title %}Search NixOS Packages{% endblock %}
+{% block title %}Discover NixOS Packages{% endblock %}
 
 {% block search_endpoint %}/search/packages{% endblock %}
+
+{% block switch_button %}
+<a href="/search/options">Search <u><em>Options</em></u> instead</a>
+{% endblock %}
 
 {% block search_results %}
 {% include "package_item.html" %}

@@ -204,30 +204,32 @@ impl Searcher for GenericSearcher<NaiveNixosOption> {
         Ok(())
     }
 
-    fn collector(&self) -> impl Collector<Fruit = Vec<FCFruit>> {
-        TopDocs::with_limit(20).tweak_score(move |segment_reader: &SegmentReader| {
-            let store_reader = segment_reader.get_store_reader(100).unwrap();
+    fn collector(&self, n_items: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>> {
+        TopDocs::with_limit(n_items.into())
+            .and_offset((page.max(1) - 1) as usize * page as usize)
+            .tweak_score(move |segment_reader: &SegmentReader| {
+                let store_reader = segment_reader.get_store_reader(100).unwrap();
 
-            move |doc: DocId, mut score: Score| {
-                let d = store_reader.get(doc).unwrap();
-                let attribute_name = d.field_values().first().unwrap().value.as_text().unwrap();
+                move |doc: DocId, mut score: Score| {
+                    let d = store_reader.get(doc).unwrap();
+                    let attribute_name = d.field_values().first().unwrap().value.as_text().unwrap();
 
-                let fcio_option = attribute_name.starts_with("flyingcircus");
-                let enable_option = attribute_name.ends_with("enable");
-                let roles_option = attribute_name.contains("roles");
+                    let fcio_option = attribute_name.starts_with("flyingcircus");
+                    let enable_option = attribute_name.ends_with("enable");
+                    let roles_option = attribute_name.contains("roles");
 
-                if fcio_option {
-                    score *= 1.3;
+                    if fcio_option {
+                        score *= 1.3;
+                    }
+                    if enable_option {
+                        score *= 1.05;
+                    }
+                    if roles_option {
+                        score *= 0.8;
+                    }
+
+                    (score, 1.0)
                 }
-                if enable_option {
-                    score *= 1.05;
-                }
-                if roles_option {
-                    score *= 0.8;
-                }
-
-                (score, 1.0)
-            }
-        })
+            })
     }
 }

@@ -28,11 +28,23 @@ struct AppState {
     channels: Arc<HashMap<String, RwLock<ChannelSearcher>>>,
 }
 
+const fn default_n_items() -> u8 {
+    15
+}
+
+const fn default_page() -> u8 {
+    1
+}
+
 #[derive(Deserialize, Debug)]
 struct SearchForm {
     #[serde(default)]
     q: String,
     channel: Option<String>,
+    #[serde(default = "default_n_items")]
+    n_items: u8,
+    #[serde(default = "default_page")]
+    page: u8,
 }
 
 impl AppState {
@@ -167,6 +179,10 @@ async fn search_options_handler<'a>(
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
+    if form.page == 0 {
+        return axum::http::StatusCode::IM_A_TEAPOT.into_response();
+    }
+
     let search_results = if !form.q.is_empty() {
         let channel = form.channel.as_ref().unwrap_or_else(|| {
             state
@@ -178,7 +194,10 @@ async fn search_options_handler<'a>(
                 .unwrap()
         });
         match state.channels.get(channel) {
-            Some(c) => c.read().unwrap().search_options(&form.q),
+            Some(c) => c
+                .read()
+                .unwrap()
+                .search_options(&form.q, form.n_items, form.page),
             None => Vec::new(),
         }
     } else {
@@ -196,6 +215,7 @@ async fn search_options_handler<'a>(
         branches: state.active_branches().await,
         results: search_results,
         search_value: &form.q,
+        page: form.page,
     })
     .into_response()
 }
@@ -205,6 +225,10 @@ async fn search_packages_handler<'a>(
     headers: HeaderMap,
     form: axum::extract::Form<SearchForm>,
 ) -> impl IntoResponse {
+    if form.page == 0 {
+        return axum::http::StatusCode::IM_A_TEAPOT.into_response();
+    }
+
     let search_results = if !form.q.is_empty() {
         let channel = form.channel.as_ref().unwrap_or_else(|| {
             state
@@ -216,7 +240,10 @@ async fn search_packages_handler<'a>(
                 .unwrap()
         });
         match state.channels.get(channel) {
-            Some(c) => c.read().unwrap().search_packages(&form.q),
+            Some(c) => c
+                .read()
+                .unwrap()
+                .search_packages(&form.q, form.n_items, form.page),
             None => Vec::new(),
         }
     } else {
@@ -234,6 +261,7 @@ async fn search_packages_handler<'a>(
         branches: state.active_branches().await,
         results: search_results,
         search_value: &form.q,
+        page: form.page,
     })
     .into_response()
 }
@@ -277,6 +305,7 @@ struct OptionsIndexTemplate<'a> {
     branches: Vec<&'a String>,
     results: Vec<NaiveNixosOption>,
     search_value: &'a str,
+    page: u8,
 }
 
 #[derive(Template)]
@@ -285,6 +314,7 @@ struct PackagesIndexTemplate<'a> {
     branches: Vec<&'a String>,
     results: Vec<NixPackage>,
     search_value: &'a str,
+    page: u8,
 }
 
 #[derive(Template)]

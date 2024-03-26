@@ -1,9 +1,14 @@
 {% extends "index.html" %}
 
-{% block title %}Search NixOS Options{% endblock %}
+{% block title %}Explore Flying Circus NixOS Options{% endblock %}
 
 {% block search_endpoint %}/search/options{% endblock %}
+
+{% block switch_button %}
+<a href="/search/packages">Search <u><em>Packages</em></u> instead</a>
+{% endblock %}
 
 {% block search_results %}
 {% include "option_item.html" %}
 {% endblock %}
+

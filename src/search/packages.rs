@@ -158,14 +158,16 @@ impl Searcher for GenericSearcher<NixPackage> {
         Ok(())
     }
 
-    fn collector(&self) -> impl Collector<Fruit = Vec<FCFruit>> {
-        TopDocs::with_limit(20).tweak_score(move |segment_reader: &SegmentReader| {
-            let store_reader = segment_reader.get_store_reader(10).unwrap();
-            move |doc: DocId, score: Score| {
-                let d = store_reader.get(doc).unwrap();
-                let name = d.field_values().first().unwrap().value.as_text().unwrap();
-                (score, 1. / name.len() as f32)
-            }
-        })
+    fn collector(&self, n_items: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>> {
+        TopDocs::with_limit(n_items.into())
+            .and_offset((page.max(1) - 1) as usize * page as usize)
+            .tweak_score(move |segment_reader: &SegmentReader| {
+                let store_reader = segment_reader.get_store_reader(10).unwrap();
+                move |doc: DocId, score: Score| {
+                    let d = store_reader.get(doc).unwrap();
+                    let name = d.field_values().first().unwrap().value.as_text().unwrap();
+                    (score, 1. / name.len() as f32)
+                }
+            })
     }
 }

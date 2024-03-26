@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
 
     let searcher =
         GenericSearcher::<NaiveNixosOption>::new_with_values(index_path.path(), naive_options)?;
-    let results = searcher.search_entries("flyingcircus.roles.devhost enable");
+    let results = searcher.search_entries("flyingcircus.roles.devhost enable", 15, 1);
 
     dbg!(&results);
     Ok(())

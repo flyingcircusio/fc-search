@@ -98,17 +98,17 @@ impl ChannelSearcher {
         self.inner.is_some()
     }
 
-    pub fn search_options(&self, q: &str) -> Vec<NaiveNixosOption> {
+    pub fn search_options(&self, q: &str, n_items: u8, page: u8) -> Vec<NaiveNixosOption> {
         self.inner
             .as_ref()
-            .map(|i| i.options.search_entries(q))
+            .map(|i| i.options.search_entries(q, n_items, page))
             .unwrap_or_default()
     }
 
-    pub fn search_packages(&self, q: &str) -> Vec<NixPackage> {
+    pub fn search_packages(&self, q: &str, n_items: u8, page: u8) -> Vec<NixPackage> {
         self.inner
             .as_ref()
-            .map(|i| i.packages.search_entries(q))
+            .map(|i| i.packages.search_entries(q, n_items, page))
             .unwrap_or_default()
     }
 
@@ -208,7 +208,7 @@ impl<Item> GenericSearcher<Item> {
         Ok(())
     }
 
-    pub fn search_entries(&self, query: &str) -> Vec<Item>
+    pub fn search_entries(&self, query: &str, n_items: u8, page: u8) -> Vec<Item>
     where
         Item: std::fmt::Debug + Clone,
         Self: Searcher,
@@ -220,7 +220,7 @@ impl<Item> GenericSearcher<Item> {
 
         let searcher = inner.reader.searcher();
         let query = self.parse_query(query);
-        let results = searcher.search(&query, &self.collector());
+        let results = searcher.search(&query, &self.collector(n_items, page));
 
         results
             .ok()
@@ -259,7 +259,7 @@ pub trait Searcher {
     fn parse_query(&self, query_string: &str) -> Box<dyn Query>;
     fn create_index(&mut self) -> anyhow::Result<()>;
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()>;
-    fn collector(&self) -> impl Collector<Fruit = Vec<FCFruit>>;
+    fn collector(&self, n_packages: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>>;
 }
 
 pub fn update_file_cache(

@@ -3,8 +3,9 @@
     <head>
         <link href="/assets/tailwind.css" rel="stylesheet" />
         <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
         <title>FC-Search</title>
-        <link href="https://flyingcircus.io/fileadmin/global-data/fira/fira-small.css" rel="stylesheet" />
+        <link rel="preconnect" href="https://flyingcircus.io/fileadmin/global-data/fira/fira-small.css" rel="stylesheet" />
         <style>
             body, html {
                 font-family: 'Fira Sans';
@@ -27,10 +28,14 @@
             </nav>
         </header>
         <div class="flex justify-center my-10">
-            <h1 class="text-6xl">
-                {% block title %}
+            <div class="flex flex-col items-center">
+                <h1 class="text-5xl pb-2">
+                    {% block title %}
+                    {% endblock %}
+                </h1>
+                {% block switch_button %}
                 {% endblock %}
-            </h1>
+            </div>
         </div>
 
         <div class="flex justify-center w-full">
@@ -38,7 +43,7 @@
                 hx-get="{% block search_endpoint %}{% endblock %}"
                 hx-trigger="input changed delay:200ms from:#search-input, search from:#search-input, change from:#channel"
                 hx-push-url="true"
-                hx-target="#search-results">
+                hx-target="#searchresults">
 
                 <input
                     class="rounded-md px-3 py-2 w-1/2 bg-fc-blue-gray" id="search-input"
@@ -46,24 +51,41 @@
                     value="{{search_value}}"
                 />
 
-                <div class="px-3 py-2 m-3 outline outline-fc-blue-gray  rounded-md">
-                    <label class="pr-1" for="channel">Channel:</label>
-                    <select name="channel" id="channel">
-                        {% for branch in branches %}
-                        <option value="{{branch}}">{{branch}}</option>
-                        {% endfor %}
-                    </select>
+                <div class="flex">
+                    <div class="px-3 py-2 m-3 outline outline-fc-blue-gray rounded-md">
+                        <label class="pr-1" for="channel">Channel:</label>
+                        <select name="channel" id="channel">
+                            {% for branch in branches %}
+                            <option value="{{branch}}">{{branch}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-center p-4 w-full">
+                    <div class="flex justify-center w-2/3">
+                        <ul class="grow" id="searchresults">
+                            {% block search_results %}
+                            {% endblock %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mb-7" _="on load or htmx:afterSwap from #searchresults show when <li/>'s length is greater than 0" >
+                    {% let prev = page - 1 %}
+                    {% let next = page + 1 %}
+
+                    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{prev}}" {% if page == 1 %}disabled{%endif%}>
+                        <
+                    </button>
+                    <div class="px-3 py-1 mx-3">
+                        Page {{page}}
+                    </div>
+                    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{next}}">
+                        >
+                    </button>
                 </div>
             </form>
-        </div>
-
-        <div class="flex justify-center p-4">
-            <div class="flex justify-center w-2/3">
-                <ul class="grow" id="search-results">
-                    {% block search_results %}
-                    {% endblock %}
-                </ul>
-            </div>
         </div>
     </body>
 </html>
