@@ -178,7 +178,10 @@ pub fn build_options_for_fcio_branch(
         .trim_end();
 
     debug!("starting nix-build");
-    let build_cmd = Command::new("nix-build").arg(derivation_output).output()?;
+    let build_cmd = Command::new("nix-build")
+        .arg("--no-out-link")
+        .arg(derivation_output)
+        .output()?;
 
     if !build_cmd.status.success() {
         let stderr = String::from_utf8(build_cmd.stderr).expect("valid utf-8 in stderr");
