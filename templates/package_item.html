@@ -23,3 +23,6 @@
     </div>
 </li>
 {% endfor %}
+{% if results.len() >  0 %}
+{% include "pagination.html" %}
+{% endif %}

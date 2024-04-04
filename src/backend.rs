@@ -207,6 +207,7 @@ async fn search_options_handler<'a>(
     if headers.contains_key("HX-Request") {
         let template = OptionItemTemplate {
             results: search_results,
+            page: form.page,
         };
         return HtmlTemplate(template).into_response();
     }
@@ -252,6 +253,7 @@ async fn search_packages_handler<'a>(
 
     if headers.contains_key("HX-Request") {
         let template = PackageItemTemplate {
+            page: form.page,
             results: search_results,
         };
         return HtmlTemplate(template).into_response();
@@ -321,12 +323,14 @@ struct PackagesIndexTemplate<'a> {
 #[template(path = "option_item.html")]
 struct OptionItemTemplate {
     results: Vec<NaiveNixosOption>,
+    page: u8,
 }
 
 #[derive(Template)]
 #[template(path = "package_item.html")]
 struct PackageItemTemplate {
     results: Vec<NixPackage>,
+    page: u8,
 }
 
 struct HtmlTemplate<T>(T);

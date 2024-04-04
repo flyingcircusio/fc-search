@@ -3,7 +3,6 @@
     <head>
         <link href="/assets/tailwind.css" rel="stylesheet" />
         <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
-        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
         <title>FC-Search</title>
         <link href="https://flyingcircus.io/fileadmin/global-data/fira/fira-small.css" rel="stylesheet" />
         <style>
@@ -69,21 +68,6 @@
                             {% endblock %}
                         </ul>
                     </div>
-                </div>
-
-                <div class="flex justify-center mb-7" _="on load or htmx:afterSwap from #searchresults show when <li/>'s length is greater than 0" >
-                    {% let prev = page - 1 %}
-                    {% let next = page + 1 %}
-
-                    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{prev}}" {% if page == 1 %}disabled{%endif%}>
-                        <
-                    </button>
-                    <div class="px-3 py-1 mx-3">
-                        Page {{page}}
-                    </div>
-                    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{next}}">
-                        >
-                    </button>
                 </div>
             </form>
         </div>

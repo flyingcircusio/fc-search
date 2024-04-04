@@ -1,0 +1,17 @@
+<div class="flex justify-center mb-7">
+    {% let prev = page - 1 %}
+    {% let next = page + 1 %}
+
+    <!-- hidden default value to stay on the same page when just pressing enter on the search bar -->
+    <input type="submit" name="page" id="page" value="{{page}}" style="display:none;" >
+
+    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{prev}}" {% if page == 1 %}disabled{%endif%}>
+        <
+    </button>
+    <div class="px-3 py-1 mx-3">
+        Page {{page}}
+    </div>
+    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{next}}">
+        >
+    </button>
+</div>
