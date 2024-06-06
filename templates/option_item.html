@@ -1,7 +1,9 @@
 {% for item in results %}
 <li class="my-4 p-2 border border-1 rounded-md">
 
-    <p class="font-bold py-1 text-fc-green">{{ item.name }}</p>
+    <div id={{item.name}} class="font-bold py-1 text-fc-green">
+        <a href="#{{item.name}}">{{ item.name }}</a>
+    </div>
 
     <p>{{ item.description|safe }}</p>
 
