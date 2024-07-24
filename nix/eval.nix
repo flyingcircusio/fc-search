@@ -70,6 +70,7 @@
           config = {
             networking.hostName = "options";
             networking.domain = "options";
+            mailserver.fqdn = "test.fcio.net";
           };
 
           imports = [
