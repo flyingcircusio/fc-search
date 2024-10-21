@@ -48,14 +48,13 @@ struct SearchForm {
 }
 
 impl AppState {
-    async fn active_branches(&self) -> Vec<&String> {
-        let mut channels = Vec::new();
-        for channel in self.channels.iter() {
-            if channel.1.read().unwrap().active() {
-                channels.push(channel.0)
-            }
-        }
-        channels
+    fn active_branches(&self) -> Vec<&String> {
+        self.channels
+            .iter()
+            .filter_map(|channel| channel.1.read().unwrap().active().then_some(channel.0))
+            .sorted()
+            .rev()
+            .collect_vec()
     }
 
     fn in_dir(state_dir: &Path, branches: Vec<Flake>) -> anyhow::Result<Self> {
@@ -213,7 +212,7 @@ async fn search_options_handler<'a>(
     }
 
     HtmlTemplate(OptionsIndexTemplate {
-        branches: state.active_branches().await,
+        branches: state.active_branches(),
         results: search_results,
         search_value: &form.q,
         page: form.page,
@@ -260,7 +259,7 @@ async fn search_packages_handler<'a>(
     }
 
     HtmlTemplate(PackagesIndexTemplate {
-        branches: state.active_branches().await,
+        branches: state.active_branches(),
         results: search_results,
         search_value: &form.q,
         page: form.page,
