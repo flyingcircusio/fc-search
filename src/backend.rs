@@ -15,7 +15,7 @@ use rust_embed::RustEmbed;
 use serde::Deserialize;
 use std::{
     collections::HashMap,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -25,7 +25,9 @@ use tracing::{debug, error, info};
 #[derive(Clone)]
 struct AppState {
     // Arc to prevent clones for every request, just need read access in the search handler
-    channels: Arc<HashMap<String, RwLock<ChannelSearcher>>>,
+    channels: Arc<RwLock<HashMap<String, ChannelSearcher>>>,
+    active_branches: Vec<String>,
+    state_dir: PathBuf,
 }
 
 const fn default_n_items() -> u8 {
@@ -48,13 +50,18 @@ struct SearchForm {
 }
 
 impl AppState {
-    fn active_branches(&self) -> Vec<&String> {
-        self.channels
+    // TODO cache this between requests, only changes on rebuilds
+    fn update_active_branches(&mut self) {
+        self.active_branches = self
+            .channels
+            .read()
+            .unwrap()
             .iter()
-            .filter_map(|channel| channel.1.read().unwrap().active().then_some(channel.0))
+            .filter_map(|channel| channel.1.active().then_some(channel.0))
             .sorted()
             .rev()
-            .collect_vec()
+            .cloned()
+            .collect_vec();
     }
 
     fn in_dir(state_dir: &Path, branches: Vec<Flake>) -> anyhow::Result<Self> {
@@ -65,32 +72,18 @@ impl AppState {
         }
 
         let mut channels = HashMap::new();
-        for mut flake in branches {
-            let branchname = flake.branch.clone();
-            let branch_path = state_dir.join(branchname.clone());
-
-            debug!("starting searcher for branch {}", &branchname);
-
-            let flake_info_path = branch_path.join("flake_info.json");
-            if matches!(flake.rev, fc_search::FlakeRev::FallbackToCached)
-                && flake_info_path.exists()
-            {
-                if let Ok(saved_flake) = serde_json::from_str::<Flake>(
-                    &std::fs::read_to_string(flake_info_path)
-                        .expect("flake_info.json exists but could not be read"),
-                ) {
-                    info!("loaded flake from file cache: {:#?}", saved_flake);
-                    flake = saved_flake;
-                };
-            }
-
-            let searcher = RwLock::new(ChannelSearcher::new(&branch_path, &flake));
-            channels.insert(branchname, searcher);
+        for flake in branches {
+            let searcher = ChannelSearcher::in_statedir(state_dir, &flake);
+            channels.insert(flake.branch, searcher.into());
         }
 
-        Ok(Self {
-            channels: Arc::new(channels),
-        })
+        let mut ret = Self {
+            channels: Arc::new(RwLock::new(channels)),
+            active_branches: Vec::new(),
+            state_dir: state_dir.to_path_buf(),
+        };
+        ret.update_active_branches();
+        Ok(ret)
     }
 }
 
@@ -137,26 +130,41 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
     );
 
     let updater_channels = state.channels.clone();
-    let updater_handle = if !test {
-        // run update loop in the background
-        tokio::spawn(async move {
-            let freq = Duration::from_hours(5);
-            let mut interval = interval(freq);
-            loop {
-                interval.tick().await;
-                for (branch, searcher) in updater_channels.iter() {
+
+    // run update loop in the background
+    let updater_handle = tokio::spawn(async move {
+        let freq = Duration::from_hours(5);
+        let mut interval = interval(freq);
+        loop {
+            interval.tick().await;
+            if let Ok(upstream_flakes) = get_fcio_flake_uris().await {
+                let channels: HashMap<String, RwLock<ChannelSearcher>> = updater_channels
+                    .read()
+                    .unwrap()
+                    .iter()
+                    .map(|(x, y)| (x.clone(), y.clone().into()))
+                    .collect();
+
+                // update existing channels
+                for (branch, searcher) in &channels {
                     update_channel(branch, searcher).await;
                 }
+
+                // initialise possibly missing channels, they will be updated on the next run
+                for flake in upstream_flakes {
+                    // index new branches
+                    if !channels.contains_key(&flake.branch) {
+                        let searcher = ChannelSearcher::in_statedir(&state.state_dir, &flake);
+
+                        updater_channels
+                            .write()
+                            .unwrap()
+                            .insert(flake.branch, searcher.into());
+                    }
+                }
             }
-        })
-    } else {
-        // just update once, no need for a timed update
-        tokio::spawn(async move {
-            for (branch, searcher) in updater_channels.iter() {
-                update_channel(branch, searcher).await;
-            }
-        })
-    };
+        }
+    });
 
     if let Err(e) = axum::serve(listener, router.into_make_service())
         .await
@@ -183,20 +191,21 @@ async fn search_options_handler<'a>(
     }
 
     let search_results = if !form.q.is_empty() {
-        let channel = form.channel.as_ref().unwrap_or_else(|| {
+        let channel = form.channel.clone().unwrap_or_else(|| {
             state
                 .channels
+                .read()
+                .unwrap()
                 .keys()
                 .sorted()
-                .next()
+                .find(|x| x.contains("prod"))
+                .cloned()
                 .context("no channels active")
                 .unwrap()
         });
-        match state.channels.get(channel) {
-            Some(c) => c
-                .read()
-                .unwrap()
-                .search_options(&form.q, form.n_items, form.page),
+
+        match state.channels.read().unwrap().get(&channel) {
+            Some(c) => c.search_options(&form.q, form.n_items, form.page),
             None => Vec::new(),
         }
     } else {
@@ -212,7 +221,7 @@ async fn search_options_handler<'a>(
     }
 
     HtmlTemplate(OptionsIndexTemplate {
-        branches: state.active_branches(),
+        branches: state.active_branches,
         results: search_results,
         search_value: &form.q,
         page: form.page,
@@ -230,20 +239,20 @@ async fn search_packages_handler<'a>(
     }
 
     let search_results = if !form.q.is_empty() {
-        let channel = form.channel.as_ref().unwrap_or_else(|| {
+        let channel = form.channel.clone().unwrap_or_else(|| {
             state
                 .channels
-                .keys()
-                .sorted()
-                .next()
-                .context("no channels active")
-                .unwrap()
-        });
-        match state.channels.get(channel) {
-            Some(c) => c
                 .read()
                 .unwrap()
-                .search_packages(&form.q, form.n_items, form.page),
+                .keys()
+                .sorted()
+                .find(|x| x.contains("prod"))
+                .cloned()
+                .context("no prod channels active")
+                .unwrap()
+        });
+        match state.channels.read().unwrap().get(&channel) {
+            Some(c) => c.search_packages(&form.q, form.n_items, form.page),
             None => Vec::new(),
         }
     } else {
@@ -259,7 +268,7 @@ async fn search_packages_handler<'a>(
     }
 
     HtmlTemplate(PackagesIndexTemplate {
-        branches: state.active_branches(),
+        branches: state.active_branches,
         results: search_results,
         search_value: &form.q,
         page: form.page,
@@ -303,7 +312,7 @@ where
 #[derive(Template)]
 #[template(path = "options_index.html")]
 struct OptionsIndexTemplate<'a> {
-    branches: Vec<&'a String>,
+    branches: Vec<String>,
     results: Vec<NaiveNixosOption>,
     search_value: &'a str,
     page: u8,
@@ -312,7 +321,7 @@ struct OptionsIndexTemplate<'a> {
 #[derive(Template)]
 #[template(path = "packages_index.html")]
 struct PackagesIndexTemplate<'a> {
-    branches: Vec<&'a String>,
+    branches: Vec<String>,
     results: Vec<NixPackage>,
     search_value: &'a str,
     page: u8,

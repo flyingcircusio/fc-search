@@ -9,7 +9,7 @@ use tantivy::{DocAddress, Index};
 use tracing::{debug, error, info};
 
 use crate::nix::{self, NixPackage};
-use crate::{Flake, LogError, NaiveNixosOption};
+use crate::{Flake, FlakeRev, LogError, NaiveNixosOption};
 
 type FCFruit = ((f32, f32), DocAddress);
 
@@ -78,9 +78,26 @@ pub struct ChannelSearcher {
 }
 
 impl ChannelSearcher {
-    #[tracing::instrument(skip(branch_path, flake), fields(branch = flake.branch))]
-    pub fn new(branch_path: &Path, flake: &Flake) -> Self {
-        let inner = ChannelSearcherInner::maybe_load(branch_path);
+    #[tracing::instrument(skip(state_dir, flake), fields(branch = flake.branch))]
+    pub fn in_statedir(state_dir: &Path, flake: &Flake) -> Self {
+        let mut flake = flake.clone();
+        let branchname = flake.branch.clone();
+        let branch_path = state_dir.join(branchname.clone());
+
+        debug!("starting searcher for branch {}", &branchname);
+
+        let flake_info_path = branch_path.join("flake_info.json");
+        if matches!(flake.rev, FlakeRev::FallbackToCached) && flake_info_path.exists() {
+            if let Ok(saved_flake) = serde_json::from_str::<Flake>(
+                &std::fs::read_to_string(flake_info_path)
+                    .expect("flake_info.json exists but could not be read"),
+            ) {
+                info!("loaded flake from file cache: {:#?}", saved_flake);
+                flake = saved_flake;
+            };
+        }
+
+        let inner = ChannelSearcherInner::maybe_load(&branch_path);
         if inner.is_some() {
             debug!("loaded the channel from cache");
         } else {
@@ -89,8 +106,8 @@ impl ChannelSearcher {
 
         Self {
             inner,
+            flake,
             branch_path: branch_path.to_path_buf(),
-            flake: flake.clone(),
         }
     }
 
