@@ -26,7 +26,6 @@ use tracing::{debug, error, info};
 struct AppState {
     // Arc to prevent clones for every request, just need read access in the search handler
     channels: Arc<RwLock<HashMap<String, ChannelSearcher>>>,
-    active_branches: Vec<String>,
     state_dir: PathBuf,
 }
 
@@ -51,9 +50,8 @@ struct SearchForm {
 
 impl AppState {
     // TODO cache this between requests, only changes on rebuilds
-    fn update_active_branches(&mut self) {
-        self.active_branches = self
-            .channels
+    fn active_branches(&self) -> Vec<String> {
+        self.channels
             .read()
             .unwrap()
             .iter()
@@ -61,7 +59,7 @@ impl AppState {
             .sorted()
             .rev()
             .cloned()
-            .collect_vec();
+            .collect_vec()
     }
 
     fn in_dir(state_dir: &Path, branches: Vec<Flake>) -> anyhow::Result<Self> {
@@ -79,10 +77,8 @@ impl AppState {
 
         let mut ret = Self {
             channels: Arc::new(RwLock::new(channels)),
-            active_branches: Vec::new(),
             state_dir: state_dir.to_path_buf(),
         };
-        ret.update_active_branches();
         Ok(ret)
     }
 }
@@ -221,7 +217,7 @@ async fn search_options_handler<'a>(
     }
 
     HtmlTemplate(OptionsIndexTemplate {
-        branches: state.active_branches,
+        branches: state.active_branches(),
         results: search_results,
         search_value: &form.q,
         page: form.page,
@@ -268,7 +264,7 @@ async fn search_packages_handler<'a>(
     }
 
     HtmlTemplate(PackagesIndexTemplate {
-        branches: state.active_branches,
+        branches: state.active_branches(),
         results: search_results,
         search_value: &form.q,
         page: form.page,
