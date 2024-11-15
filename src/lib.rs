@@ -7,7 +7,7 @@ use nix::NixosOption;
 
 use itertools::Itertools;
 use reqwest::header::HeaderMap;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -162,13 +162,25 @@ impl Flake {
             "https://api.github.com/repos/{}/{}/branches/{}",
             owner, name, branch
         );
-        let response_text = client
+
+        let response = client
             .get(url)
             .header("Accept", "application/json")
             .header("User-Agent", "fc-search")
             .send()
             .await
-            .expect("unable to fetch repository info")
+            .expect("unable to fetch repository info");
+
+        anyhow::ensure!(
+            response.status().is_success(),
+            "response from github was not successful: {}",
+            response
+                .status()
+                .canonical_reason()
+                .unwrap_or("(no canonical reason)")
+        );
+
+        let response_text = response
             .text()
             .await
             .expect("expected to get text for api response from github");
@@ -177,7 +189,7 @@ impl Flake {
             Ok(s) => s,
             Err(e) => {
                 error!(
-                    "did not get valid json from the github api {} {}",
+                    "did not get json in the expected format from the github api {} {}",
                     response_text, e
                 );
                 anyhow::bail!("invalid json");

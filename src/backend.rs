@@ -75,7 +75,7 @@ impl AppState {
             channels.insert(flake.branch, searcher.into());
         }
 
-        let mut ret = Self {
+        let ret = Self {
             channels: Arc::new(RwLock::new(channels)),
             state_dir: state_dir.to_path_buf(),
         };
