@@ -3,11 +3,12 @@
 pub mod nix;
 pub mod search;
 
+use anyhow::Context;
 use nix::NixosOption;
 
 use itertools::Itertools;
 use reqwest::header::HeaderMap;
-use reqwest::{Client, StatusCode};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -169,7 +170,7 @@ impl Flake {
             .header("User-Agent", "fc-search")
             .send()
             .await
-            .expect("unable to fetch repository info");
+            .context("unable to fetch repository info")?;
 
         anyhow::ensure!(
             response.status().is_success(),
@@ -183,7 +184,7 @@ impl Flake {
         let response_text = response
             .text()
             .await
-            .expect("expected to get text for api response from github");
+            .context("expected to get text for api response from github")?;
 
         let ghinfo: GithubBranchInfo = match serde_json::from_str(&response_text) {
             Ok(s) => s,
@@ -196,9 +197,10 @@ impl Flake {
             }
         };
 
-        assert_eq!(
-            ghinfo.name, branch,
-            "got an api response for a different branch"
+        anyhow::ensure!(
+            ghinfo.name.eq(branch),
+            "got an api response for a different branch: {}",
+            ghinfo.name
         );
         debug!("latest rev is {}", ghinfo.commit.sha);
 
