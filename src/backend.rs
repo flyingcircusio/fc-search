@@ -72,7 +72,7 @@ impl AppState {
         let mut channels = HashMap::new();
         for flake in branches {
             let searcher = ChannelSearcher::in_statedir(state_dir, &flake);
-            channels.insert(flake.branch, searcher.into());
+            channels.insert(flake.branch, searcher);
         }
 
         let ret = Self {
@@ -91,6 +91,7 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
                 name: "fc-nixos".to_string(),
                 branch: "fc-23.11-dev".to_string(),
                 rev: fc_search::FlakeRev::FallbackToCached,
+                last_modified: None,
             }]
         };
 
@@ -155,22 +156,21 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
                         updater_channels
                             .write()
                             .unwrap()
-                            .insert(flake.branch, searcher.into());
+                            .insert(flake.branch, searcher);
                     }
                 }
             }
         }
     });
 
-    if let Err(e) = axum::serve(listener, router.into_make_service())
+    axum::serve(listener, router.into_make_service())
         .await
         .context("error while starting server")
-    {
-        let _ = updater_handle.abort();
-        Err(e)
-    } else {
-        Ok(())
-    }
+        .map(|_| ())
+        .map_err(|e| {
+            updater_handle.abort();
+            e
+        })
 }
 
 async fn index_handler() -> impl IntoResponse {

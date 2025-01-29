@@ -131,57 +131,46 @@ impl ChannelSearcher {
 
     #[tracing::instrument(skip(self), fields(branch = self.flake.branch))]
     pub async fn update(&mut self) -> anyhow::Result<()> {
-        //anyhow::bail!("test error for logging");
         let active = self.active();
-        let latest_rev =
-            Flake::get_latest_rev(&self.flake.owner, &self.flake.name, &self.flake.branch).await;
-        match latest_rev {
-            Ok(new_flake_rev) if !active || new_flake_rev != self.flake.rev => {
-                if active {
-                    info!("current rev is {:?}", self.flake.rev);
-                    info!("found newer revision: {:?}", new_flake_rev);
-                } else {
-                    info!("generating options for rev {:?}", new_flake_rev);
-                }
+        let mut new_flake = self.flake.clone();
 
-                let mut new_flake = self.flake.clone();
-                new_flake.rev = new_flake_rev;
+        match new_flake.get_newest_from_github().await {
+            Ok(_) if active && new_flake.rev != self.flake.rev => {
+                info!("current rev is {:?}", self.flake.rev);
+                info!("found newer revision: {:?}", new_flake.rev);
+
                 match update_file_cache(&self.branch_path, &new_flake) {
                     Ok((options, packages)) => {
                         info!("successfully updated file cache");
+                        let Some(ref mut i) = &mut self.inner else {
+                            unreachable!("channel searcher is active but inner is not some");
+                        };
 
-                        if !active {
-                            let inner = ChannelSearcherInner::new_with_values(
-                                &self.branch_path,
-                                options,
-                                packages,
-                            );
-
-                            self.flake = new_flake;
-                            self.inner = inner;
-                        } else {
-                            // this is guaranteed to be true after the `active` check from above
-                            // but the type system insists on unpacking it
-                            // since this is not a critical path, unsafe unwrapping is not
-                            // warranted
-                            if let Some(ref mut i) = &mut self.inner {
-                                i.options
-                                    .update_entries(options)
-                                    .context("could not update options")?;
-                                i.packages
-                                    .update_entries(packages)
-                                    .context("could not update packages")?;
-                            } else {
-                                unreachable!("channel searcher is active but inner is not some");
-                            }
-                        }
+                        i.options
+                            .update_entries(options)
+                            .context("could not update options")?;
+                        i.packages
+                            .update_entries(packages)
+                            .context("could not update packages")?;
                     }
                     Err(e) => error!("error updating branch: {}", e),
-                };
+                }
             }
+
+            Ok(_) if !active => match update_file_cache(&self.branch_path, &new_flake) {
+                Ok((options, packages)) => {
+                    info!("successfully updated file cache");
+                    let inner =
+                        ChannelSearcherInner::new_with_values(&self.branch_path, options, packages);
+
+                    self.flake = new_flake;
+                    self.inner = inner;
+                }
+                Err(e) => error!("error updating branch: {}", e),
+            },
             Ok(_) => info!("already up-to-date"),
             Err(e) => error!("error getting the newest commit: {}", e),
-        };
+        }
 
         Ok(())
     }

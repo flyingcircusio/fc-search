@@ -1,9 +1,10 @@
 #![feature(duration_constructors)]
 
+mod github;
 pub mod nix;
 pub mod search;
 
-use anyhow::Context;
+use chrono::{DateTime, FixedOffset};
 use nix::NixosOption;
 
 use itertools::Itertools;
@@ -12,7 +13,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 use url::Url;
 
 use self::nix::Expression;
@@ -111,33 +112,35 @@ pub struct Flake {
     pub name: String,
     pub branch: String,
     pub rev: FlakeRev,
-}
-
-#[derive(Deserialize)]
-struct GithubCommitInfo {
-    sha: String,
-}
-
-#[derive(Deserialize)]
-struct GithubBranchInfo {
-    name: String,
-    commit: GithubCommitInfo,
+    #[serde(default)]
+    pub last_modified: Option<DateTime<FixedOffset>>,
 }
 
 impl Flake {
     pub async fn new(owner: &str, name: &str, branch: &str) -> anyhow::Result<Self> {
-        let rev = Self::get_latest_rev(owner, name, branch)
-            .await
-            .unwrap_or_else(|_| {
-                warn!("failed to fetch latest rev. Trying to fall back to cached options");
-                FlakeRev::FallbackToCached
-            });
-        Ok(Self {
-            owner: owner.to_string(),
-            name: name.to_string(),
-            branch: branch.to_string(),
-            rev,
-        })
+        match github::fetch_latest_rev(owner, name, branch, None).await {
+            Ok(github::ApiBranchResponse::Ok { last_modified, sha }) => Ok(Self {
+                owner: owner.to_string(),
+                name: name.to_string(),
+                branch: branch.to_string(),
+                last_modified,
+                rev: FlakeRev::Specific(sha),
+            }),
+            Err(e) => {
+                warn!(
+                    "failed to fetch latest rev: '{}'. Trying to fall back to cached options",
+                    e
+                );
+                Ok(Self {
+                    owner: owner.to_string(),
+                    name: name.to_string(),
+                    branch: branch.to_string(),
+                    last_modified: None,
+                    rev: FlakeRev::FallbackToCached,
+                })
+            }
+            _ => unreachable!("cannot get a 304 here"),
+        }
     }
 
     pub fn flake_uri(&self) -> String {
@@ -154,57 +157,16 @@ impl Flake {
         )
     }
 
-    pub async fn get_latest_rev(owner: &str, name: &str, branch: &str) -> anyhow::Result<FlakeRev> {
-        let client = Client::builder()
-            .build()
-            .expect("could not build request client");
-
-        let url = format!(
-            "https://api.github.com/repos/{}/{}/branches/{}",
-            owner, name, branch
-        );
-
-        let response = client
-            .get(url)
-            .header("Accept", "application/json")
-            .header("User-Agent", "fc-search")
-            .send()
-            .await
-            .context("unable to fetch repository info")?;
-
-        anyhow::ensure!(
-            response.status().is_success(),
-            "response from github was not successful: {}",
-            response
-                .status()
-                .canonical_reason()
-                .unwrap_or("(no canonical reason)")
-        );
-
-        let response_text = response
-            .text()
-            .await
-            .context("expected to get text for api response from github")?;
-
-        let ghinfo: GithubBranchInfo = match serde_json::from_str(&response_text) {
-            Ok(s) => s,
-            Err(e) => {
-                error!(
-                    "did not get json in the expected format from the github api {} {}",
-                    response_text, e
-                );
-                anyhow::bail!("invalid json");
-            }
+    pub async fn get_newest_from_github(&mut self) -> anyhow::Result<()> {
+        if let github::ApiBranchResponse::Ok { last_modified, sha } =
+            github::fetch_latest_rev(&self.owner, &self.name, &self.branch, self.last_modified)
+                .await?
+        {
+            self.last_modified = last_modified;
+            self.rev = FlakeRev::Specific(sha);
         };
 
-        anyhow::ensure!(
-            ghinfo.name.eq(branch),
-            "got an api response for a different branch: {}",
-            ghinfo.name
-        );
-        debug!("latest rev is {}", ghinfo.commit.sha);
-
-        Ok(FlakeRev::Specific(ghinfo.commit.sha))
+        Ok(())
     }
 }
 
@@ -274,10 +236,7 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
 
     let mut flakes = Vec::new();
     for branch in branches.into_iter() {
-        match Flake::new("flyingcircusio", "fc-nixos", &branch).await {
-            Ok(s) => flakes.push(s),
-            Err(e) => error!("error fetching information about branch {}: {e:?}", branch),
-        };
+        flakes.push(Flake::new("flyingcircusio", "fc-nixos", &branch).await?);
     }
 
     info!(
