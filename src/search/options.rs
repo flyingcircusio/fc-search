@@ -205,7 +205,7 @@ impl Searcher for GenericSearcher<NaiveNixosOption> {
     }
 
     fn collector(&self, n_items: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>> {
-        TopDocs::with_limit(n_items.into())
+        TopDocs::with_limit(n_items as usize + 1)
             .and_offset((page.max(1) - 1) as usize * n_items as usize)
             .tweak_score(move |segment_reader: &SegmentReader| {
                 let store_reader = segment_reader.get_store_reader(100).unwrap();

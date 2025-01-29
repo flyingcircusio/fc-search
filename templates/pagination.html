@@ -11,7 +11,7 @@
     <div class="px-3 py-1 mx-3">
         Page {{page}}
     </div>
-    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{next}}">
+    <button type="submit" class="px-3 py-1 mx-3 outline outline-fc-blue-gray rounded-md disabled:opacity-50" name="page" value="{{next}}" {% if !has_next_page %}disabled{%endif%}</button>}>
         >
     </button>
 </div>

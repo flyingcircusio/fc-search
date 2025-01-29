@@ -265,7 +265,10 @@ pub trait Searcher {
     fn parse_query(&self, query_string: &str) -> Box<dyn Query>;
     fn create_index(&mut self) -> anyhow::Result<()>;
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()>;
-    fn collector(&self, n_packages: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>>;
+
+    // returns a maximum of (n_items + 1) results (with an offset of n_items * page) so that a next page button
+    // can be displayed if there would be > 0 items on the next page
+    fn collector(&self, n_items: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>>;
 }
 
 pub fn update_file_cache(

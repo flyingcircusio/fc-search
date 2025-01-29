@@ -186,7 +186,9 @@ async fn search_options_handler<'a>(
         return axum::http::StatusCode::IM_A_TEAPOT.into_response();
     }
 
-    let search_results = if !form.q.is_empty() {
+    // contains one more result than requested to conditionally disable the next button in the
+    // template if the number of results for the search is not enough for another page
+    let mut search_results = if !form.q.is_empty() {
         let channel = form.channel.clone().unwrap_or_else(|| {
             state
                 .channels
@@ -199,19 +201,26 @@ async fn search_options_handler<'a>(
                 .context("no channels active")
                 .unwrap()
         });
-
-        match state.channels.read().unwrap().get(&channel) {
-            Some(c) => c.search_options(&form.q, form.n_items, form.page),
-            None => Vec::new(),
-        }
+        state
+            .channels
+            .read()
+            .unwrap()
+            .get(&channel)
+            .map(|c| c.search_options(&form.q, form.n_items, form.page))
+            .unwrap_or_default()
     } else {
         Vec::new()
     };
+
+    let has_next_page = search_results.len() > form.n_items as usize;
+    // remove the last element since it contains one more than requested
+    let _ = search_results.pop();
 
     if headers.contains_key("HX-Request") {
         let template = OptionItemTemplate {
             results: search_results,
             page: form.page,
+            has_next_page,
         };
         return HtmlTemplate(template).into_response();
     }
@@ -221,6 +230,7 @@ async fn search_options_handler<'a>(
         results: search_results,
         search_value: &form.q,
         page: form.page,
+        has_next_page,
     })
     .into_response()
 }
@@ -234,7 +244,9 @@ async fn search_packages_handler<'a>(
         return axum::http::StatusCode::IM_A_TEAPOT.into_response();
     }
 
-    let search_results = if !form.q.is_empty() {
+    // contains one more result than requested to conditionally disable the next button in the
+    // template if the number of results for the search is not enough for another page
+    let mut search_results = if !form.q.is_empty() {
         let channel = form.channel.clone().unwrap_or_else(|| {
             state
                 .channels
@@ -247,18 +259,26 @@ async fn search_packages_handler<'a>(
                 .context("no prod channels active")
                 .unwrap()
         });
-        match state.channels.read().unwrap().get(&channel) {
-            Some(c) => c.search_packages(&form.q, form.n_items, form.page),
-            None => Vec::new(),
-        }
+        state
+            .channels
+            .read()
+            .unwrap()
+            .get(&channel)
+            .map(|c| c.search_packages(&form.q, form.n_items, form.page))
+            .unwrap_or_default()
     } else {
         Vec::new()
     };
+
+    let has_next_page = search_results.len() > form.n_items as usize;
+    // remove the last element since it contains one more than requested
+    let _ = search_results.pop();
 
     if headers.contains_key("HX-Request") {
         let template = PackageItemTemplate {
             page: form.page,
             results: search_results,
+            has_next_page,
         };
         return HtmlTemplate(template).into_response();
     }
@@ -268,6 +288,7 @@ async fn search_packages_handler<'a>(
         results: search_results,
         search_value: &form.q,
         page: form.page,
+        has_next_page,
     })
     .into_response()
 }
@@ -312,6 +333,7 @@ struct OptionsIndexTemplate<'a> {
     results: Vec<NaiveNixosOption>,
     search_value: &'a str,
     page: u8,
+    has_next_page: bool,
 }
 
 #[derive(Template)]
@@ -321,6 +343,7 @@ struct PackagesIndexTemplate<'a> {
     results: Vec<NixPackage>,
     search_value: &'a str,
     page: u8,
+    has_next_page: bool,
 }
 
 #[derive(Template)]
@@ -328,6 +351,7 @@ struct PackagesIndexTemplate<'a> {
 struct OptionItemTemplate {
     results: Vec<NaiveNixosOption>,
     page: u8,
+    has_next_page: bool,
 }
 
 #[derive(Template)]
@@ -335,6 +359,7 @@ struct OptionItemTemplate {
 struct PackageItemTemplate {
     results: Vec<NixPackage>,
     page: u8,
+    has_next_page: bool,
 }
 
 struct HtmlTemplate<T>(T);
