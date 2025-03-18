@@ -1,12 +1,13 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 use tantivy::collector::{Collector, TopDocs};
+use tantivy::indexer::UserOperation;
 use tantivy::query::{
     BooleanQuery, BoostQuery, ConstScoreQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, TermQuery,
 };
 use tantivy::schema::{Facet, FacetOptions, Schema, TextFieldIndexing, TextOptions, TEXT};
 use tantivy::tokenizer::{TextAnalyzer, WhitespaceTokenizer};
-use tantivy::{DocId, Document, Score, SegmentReader, Term};
+use tantivy::{doc, DocId, Score, SegmentReader, TantivyDocument, Term};
 
 use super::{open_or_create_index, FCFruit, GenericSearcher, Searcher, SearcherInner};
 use crate::NaiveNixosOption;
@@ -148,7 +149,7 @@ impl Searcher for GenericSearcher<NaiveNixosOption> {
 
         let reader = index
             .reader_builder()
-            .reload_policy(tantivy::ReloadPolicy::OnCommit)
+            .reload_policy(tantivy::ReloadPolicy::OnCommitWithDelay)
             .try_into()
             .unwrap();
 
@@ -190,14 +191,16 @@ impl Searcher for GenericSearcher<NaiveNixosOption> {
             .delete_all_documents()
             .expect("failed to delete all documents");
 
-        for (option_name, option) in &entries {
-            let mut document = Document::default();
-            document.add_text(attribute_name, option_name.clone());
-            document.add_text(name, option_name.replace('.', " "));
-            document.add_facet(name_facet, Facet::from_path(option_name.clone().split('.')));
-            document.add_text(description, option.description.0.clone());
-            index_writer.add_document(document)?;
-        }
+        index_writer
+            .run(entries.iter().map(|(option_name, option)| {
+                UserOperation::Add(doc! {
+                    attribute_name => option_name.clone(),
+                    name => option_name.replace('.', " "),
+                    name_facet => Facet::from_path(option_name.clone().split('.')),
+                    description => option.description.0.clone()
+                })
+            }))
+            .unwrap();
 
         index_writer.commit()?;
         self.map = entries;
@@ -208,11 +211,17 @@ impl Searcher for GenericSearcher<NaiveNixosOption> {
         TopDocs::with_limit(n_items as usize + 1)
             .and_offset((page.max(1) - 1) as usize * n_items as usize)
             .tweak_score(move |segment_reader: &SegmentReader| {
+                // TODO: replace with much more efficient faceted search
+                // should not read the entire Document to score it based on its name
                 let store_reader = segment_reader.get_store_reader(100).unwrap();
 
                 move |doc: DocId, mut score: Score| {
-                    let d = store_reader.get(doc).unwrap();
-                    let attribute_name = d.field_values().first().unwrap().value.as_text().unwrap();
+                    let d: TantivyDocument = store_reader.get(doc).unwrap();
+                    let tantivy::schema::OwnedValue::Str(attribute_name) =
+                        d.field_values().first().unwrap().value()
+                    else {
+                        unreachable!("can't be anything else");
+                    };
 
                     let fcio_option = attribute_name.starts_with("flyingcircus");
                     let enable_option = attribute_name.ends_with("enable");

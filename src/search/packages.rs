@@ -5,7 +5,7 @@ use tantivy::query::{
     BooleanQuery, BoostQuery, FuzzyTermQuery, Occur, Query, RegexQuery, TermQuery,
 };
 use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, TEXT};
-use tantivy::{DocId, Document, Score, SegmentReader, Term};
+use tantivy::{doc, DocId, Score, SegmentReader, TantivyDocument, Term};
 
 use super::{open_or_create_index, FCFruit, GenericSearcher, Searcher, SearcherInner};
 use crate::nix::NixPackage;
@@ -112,7 +112,7 @@ impl Searcher for GenericSearcher<NixPackage> {
 
         let reader = index
             .reader_builder()
-            .reload_policy(tantivy::ReloadPolicy::OnCommit)
+            .reload_policy(tantivy::ReloadPolicy::OnCommitWithDelay)
             .try_into()
             .unwrap();
 
@@ -146,14 +146,18 @@ impl Searcher for GenericSearcher<NixPackage> {
         index_writer
             .delete_all_documents()
             .expect("failed to delete all documents");
-        for (aname, package) in &entries {
-            let mut document = Document::default();
-            document.add_text(attribute_name, aname.clone());
-            document.add_text(description, package.description.clone().unwrap_or_default());
-            index_writer.add_document(document)?;
-        }
-
         index_writer.commit()?;
+
+        index_writer
+            .run(entries.iter().map(|(aname, package)| {
+                tantivy::indexer::UserOperation::Add(doc! {
+                    attribute_name => aname.clone(),
+                    description => package.description.clone().unwrap_or_default()
+                })
+            }))
+            .unwrap();
+        index_writer.commit()?;
+
         self.map = entries;
         Ok(())
     }
@@ -164,9 +168,13 @@ impl Searcher for GenericSearcher<NixPackage> {
             .tweak_score(move |segment_reader: &SegmentReader| {
                 let store_reader = segment_reader.get_store_reader(10).unwrap();
                 move |doc: DocId, score: Score| {
-                    let d = store_reader.get(doc).unwrap();
-                    let name = d.field_values().first().unwrap().value.as_text().unwrap();
-                    (score, 1. / name.len() as f32)
+                    let d: TantivyDocument = store_reader.get(doc).unwrap();
+                    let tantivy::schema::OwnedValue::Str(attribute_name) =
+                        d.field_values().first().unwrap().value()
+                    else {
+                        unreachable!("can't be anything else");
+                    };
+                    (score, 1. / attribute_name.len() as f32)
                 }
             })
     }

@@ -9,23 +9,23 @@ edition = "2021"
 anyhow = "1.0.80"
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
-axum = { version = "0.7.4", features = ["macros"] }
+axum = { version = "0.8.1", features = ["macros"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.5.1", features = ["derive"] }
-console-subscriber = "0.2.0"
+console-subscriber = "0.4.0"
 ctrlc = "3.4.2"
-itertools = "0.12.1"
+itertools = "0.14.0"
 markdown = "1.0.0-alpha.16"
 mime_guess = "2.0.4"
-reqwest = "0.11.24"
-rust-embed = { version = "8.2.0", features = ["axum", "compression"] }
+reqwest = "0.12.15"
+rust-embed = { version = "8.6.0", features = ["axum", "compression"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
-tantivy = "0.21.1"
+tantivy = "0.22.0"
 tempfile = { version = "3.10.0", features = ["nightly"] }
 tokio = { version = "1.36.0", features = ["full"] }
-tower = "0.4.13"
-tower-http = { version = "0.5.1", features = ["fs"] }
+tower = "0.5.2"
+tower-http = { version = "0.6.2", features = ["fs"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = { version = "2.5.0", features = ["serde"] }

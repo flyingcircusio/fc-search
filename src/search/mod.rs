@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tantivy::collector::Collector;
 use tantivy::query::Query;
-use tantivy::schema::{Field, Schema};
-use tantivy::{DocAddress, Index};
+use tantivy::schema::{Field, OwnedValue, Schema};
+use tantivy::{DocAddress, Index, TantivyDocument};
 use tracing::{debug, error, info};
 
 use crate::nix::{self, NixPackage};
@@ -234,19 +234,17 @@ impl<Item> GenericSearcher<Item> {
                 top_docs
                     .into_iter()
                     .map(|(_score, doc_address)| {
-                        let retrieved = searcher.doc(doc_address).unwrap();
-                        let name = retrieved
+                        let retrieved: TantivyDocument = searcher.doc(doc_address).unwrap();
+                        let OwnedValue::Str(name) = retrieved
                             .get_first(inner.reference_field)
                             .expect("result has a value for name")
-                            .as_text()
-                            .expect("value is text")
-                            .to_string();
-
-                        //dbg!((&name, &query.explain(&searcher, doc_address)));
+                        else {
+                            unreachable!("can't be non-str");
+                        };
 
                         let entry: Item = self
                             .map
-                            .get(&name)
+                            .get(name)
                             .expect("found option is not indexed")
                             .clone();
                         entry
