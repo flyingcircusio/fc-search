@@ -309,6 +309,7 @@ pub fn update_file_cache(
 
 #[tracing::instrument(skip(schema))]
 fn open_or_create_index(index_path: &Path, schema: &Schema) -> anyhow::Result<Index> {
+    std::fs::create_dir_all(index_path)?;
     let index_tmp = Index::open_or_create(
         tantivy::directory::MmapDirectory::open(index_path).unwrap(),
         schema.clone(),
