@@ -1,40 +1,38 @@
 {% for item in results %}
-<li class="my-4 p-2 border border-1 rounded-md">
+<li class="my-4 p-4 border border-1 rounded-md">
 
-    <div id={{item.name}} class="font-bold py-1 text-fc-green">
+    <div id={{item.name}} class="font-bold py-1 text-lg text-fc-green">
         <a href="#{{item.name}}">{{ item.name }}</a>
     </div>
 
-    <p>{{ item.description|safe }}</p>
+    <p class="pb-2">{{ item.description|safe }}</p>
 
     {% if item.read_only %}
     <p>This option is read-only!</p>
     {% endif %}
 
-    <div class="py-2 grid grid-cols-7">
+    <div class="pb-2 pt-4 grid grid-cols-7 space-y-2">
         <p>Type</p>
-        <code class="col-span-6">
-            {{item.option_type}}
-        </code>
+        <code class="col-span-6 whitespace-pre bg-gray-100 p-2 rounded">{{item.option_type}}</code>
 
+        {% if item.default.0 != "" %}
         <p>Default</p>
-        <code class="col-span-6">
-            {{ item.default|safe }}
-        </code>
+        <code class="col-span-6 whitespace-pre bg-gray-100 p-2 rounded">{{ item.default|safe }}</code>
+        {% endif %}
 
+        {% if item.example.0 != "" %}
         <p>Example</p>
+        <code class="col-span-6 whitespace-pre bg-gray-100 p-2 rounded">{{ item.example|safe }}</code>
+        {% endif %}
 
-        <code class="col-span-6">
-            {{ item.example|safe }}
-        </code>
-    </div>
-
-    <div>
-        <ul>
-        {% for s in item.declarations %}
-            <li>{{ s|safe }}</li>
-        {% endfor %}
-        </ul>
+        <p>Declarations</p>
+        <div>
+            <ul class="w-full rounded">
+                {% for s in item.declarations %}
+                    <li class="text-sm whitespace-nowrap w-full">{{ s|safe }}</li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 </li>
 {% endfor %}
