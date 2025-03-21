@@ -1,0 +1,1102 @@
+{
+  "boot.initrd.systemd.users.<name>.group": {
+    "name": "boot.initrd.systemd.users.<name>.group",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/config/users-groups.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/config/users-groups.nix</a>"
+    ],
+    "description": "<p>Group the user belongs to in initrd.</p>\n",
+    "default": "config.users.users.${name}.group",
+    "example": "",
+    "option_type": "(optionally newline-terminated) single-line string",
+    "read_only": false
+  },
+  "services.lshd.loginShell": {
+    "name": "services.lshd.loginShell",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ssh/lshd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ssh/lshd.nix</a>"
+    ],
+    "description": "<p>If non-null, override the default login shell with the\nspecified value.</p>\n",
+    "default": "null",
+    "example": "\"/nix/store/xyz-bash-10.0/bin/bash10\"",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "services.home-assistant.config.homeassistant.time_zone": {
+    "name": "services.home-assistant.config.homeassistant.time_zone",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/home-automation/home-assistant.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/home-automation/home-assistant.nix</a>"
+    ],
+    "description": "<p>Pick your time zone from the column TZ of Wikipedia’s <a href=\"https://en.wikipedia.org/wiki/List_of_tz_database_time_zones\">list of tz database time zones</a>.</p>\n",
+    "default": "config.time.timeZone or null\n",
+    "example": "\"Europe/Amsterdam\"",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "systemd.user.timers.<name>.wants": {
+    "name": "systemd.user.timers.<name>.wants",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd/user.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd/user.nix</a>"
+    ],
+    "description": "<p>Start the specified units when this unit is started.</p>\n",
+    "default": "[ ]",
+    "example": "",
+    "option_type": "list of string matching the pattern [a-zA-Z0-9@%:_.\\-]+[.](service|socket|device|mount|automount|swap|target|path|timer|scope|slice)",
+    "read_only": false
+  },
+  "services.oauth2_proxy.cookie.secure": {
+    "name": "services.oauth2_proxy.cookie.secure",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/oauth2_proxy.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/oauth2_proxy.nix</a>"
+    ],
+    "description": "<p>Set secure (HTTPS) cookie flag.</p>\n",
+    "default": "true",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.iptsd.config.Touch.DisableOnPalm": {
+    "name": "services.iptsd.config.Touch.DisableOnPalm",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/hardware/iptsd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/hardware/iptsd.nix</a>"
+    ],
+    "description": "<p>Ignore all touch inputs if a palm was registered on the display.</p>",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.kasmweb.networkSubnet": {
+    "name": "services.kasmweb.networkSubnet",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/kasmweb/default.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/kasmweb/default.nix</a>"
+    ],
+    "description": "<p>The network subnet to use for the containers.</p>\n",
+    "default": "\"172.20.0.0/16\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  },
+  "systemd.user.services.<name>.startLimitIntervalSec": {
+    "name": "systemd.user.services.<name>.startLimitIntervalSec",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd/user.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd/user.nix</a>"
+    ],
+    "description": "<p>Configure unit start rate limiting. Units which are started\nmore than startLimitBurst times within an interval time\ninterval are not permitted to start any more.</p>\n",
+    "default": "",
+    "example": "",
+    "option_type": "signed integer",
+    "read_only": false
+  },
+  "services.coturn.extraConfig": {
+    "name": "services.coturn.extraConfig",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/coturn.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/coturn.nix</a>"
+    ],
+    "description": "<p>Additional configuration options</p>",
+    "default": "\"\"",
+    "example": "",
+    "option_type": "strings concatenated with \"\\n\"",
+    "read_only": false
+  },
+  "services.nextcloud.config.dbport": {
+    "name": "services.nextcloud.config.dbport",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/nextcloud.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/nextcloud.nix</a>"
+    ],
+    "description": "<p>Database port.</p>",
+    "default": "null",
+    "example": "",
+    "option_type": "null or signed integer or string",
+    "read_only": false
+  },
+  "i18n.inputMethod.fcitx5.addons": {
+    "name": "i18n.inputMethod.fcitx5.addons",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/i18n/input-method/fcitx5.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/i18n/input-method/fcitx5.nix</a>"
+    ],
+    "description": "<p>Enabled Fcitx5 addons.</p>\n",
+    "default": "[ ]",
+    "example": "with pkgs; [ fcitx5-rime ]",
+    "option_type": "list of package",
+    "read_only": false
+  },
+  "services.minidlna.settings.friendly_name": {
+    "name": "services.minidlna.settings.friendly_name",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/minidlna.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/minidlna.nix</a>"
+    ],
+    "description": "<p>Name that the DLNA server presents to clients.</p>",
+    "default": "config.networking.hostName",
+    "example": "\"rpi3\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.oauth2_proxy.proxyPrefix": {
+    "name": "services.oauth2_proxy.proxyPrefix",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/oauth2_proxy.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/oauth2_proxy.nix</a>"
+    ],
+    "description": "<p>The url root path that this proxy should be nested under.</p>\n",
+    "default": "\"/oauth2\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  },
+  "programs.xfs_quota.projects.<name>.sizeSoftLimit": {
+    "name": "programs.xfs_quota.projects.<name>.sizeSoftLimit",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/xfs_quota.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/xfs_quota.nix</a>"
+    ],
+    "description": "<p>Soft limit of the project size</p>",
+    "default": "null",
+    "example": "\"30g\"",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "services.gitea.group": {
+    "name": "services.gitea.group",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/gitea.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/gitea.nix</a>"
+    ],
+    "description": "<p>Group under which gitea runs.</p>",
+    "default": "\"gitea\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  },
+  "systemd.timers.<name>.description": {
+    "name": "systemd.timers.<name>.description",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd.nix</a>"
+    ],
+    "description": "<p>Description of this unit used in systemd messages and progress indicators.</p>",
+    "default": "\"\"",
+    "example": "",
+    "option_type": "(optionally newline-terminated) single-line string",
+    "read_only": false
+  },
+  "networking.dhcpcd.IPv6rs": {
+    "name": "networking.dhcpcd.IPv6rs",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/dhcpcd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/dhcpcd.nix</a>"
+    ],
+    "description": "<p>Force enable or disable solicitation and receipt of IPv6 Router Advertisements.\nThis is required, for example, when using a static unique local IPv6 address (ULA)\nand global IPv6 address auto-configuration with SLAAC.</p>\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or boolean",
+    "read_only": false
+  },
+  "services.openssh.startWhenNeeded": {
+    "name": "services.openssh.startWhenNeeded",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ssh/sshd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ssh/sshd.nix</a>"
+    ],
+    "description": "<p>If set, {command}<code>sshd</code> is socket-activated; that\nis, instead of having it permanently running as a daemon,\nsystemd will start an instance for each incoming connection.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "networking.wg-quick.interfaces.<name>.listenPort": {
+    "name": "networking.wg-quick.interfaces.<name>.listenPort",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/wg-quick.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/wg-quick.nix</a>"
+    ],
+    "description": "<p>16-bit port for listening. Optional; if not specified,\nautomatically generated based on interface name.</p>\n",
+    "default": "null",
+    "example": "51820",
+    "option_type": "null or signed integer",
+    "read_only": false
+  },
+  "services.xtreemfs.dir.extraConfig": {
+    "name": "services.xtreemfs.dir.extraConfig",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/network-filesystems/xtreemfs.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/network-filesystems/xtreemfs.nix</a>"
+    ],
+    "description": "<p>Configuration of XtreemFS DIR service.\nWARNING: configuration is saved as plaintext inside nix store.\nFor more options: https://www.xtreemfs.org/xtfs-guide-1.5.1/index.html</p>\n",
+    "default": "\"\"",
+    "example": "''\n  # specify whether SSL is required\n  ssl.enabled = true\n  ssl.service_creds.pw = passphrase\n  ssl.service_creds.container = pkcs12\n  ssl.service_creds = /etc/xos/xtreemfs/truststore/certs/dir.p12\n  ssl.trusted_certs = /etc/xos/xtreemfs/truststore/certs/trusted.jks\n  ssl.trusted_certs.pw = jks_passphrase\n  ssl.trusted_certs.container = jks\n''",
+    "option_type": "strings concatenated with \"\\n\"",
+    "read_only": false
+  },
+  "services.sonarr.enable": {
+    "name": "services.sonarr.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/sonarr.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/sonarr.nix</a>"
+    ],
+    "description": "<p>Whether to enable Sonarr.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.jibri.controlDomain": {
+    "name": "services.jibri.controlDomain",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/jitsi/jibri.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/jitsi/jibri.nix</a>"
+    ],
+    "description": "<p>Domain part of the JID for control connection.</p>\n",
+    "default": "",
+    "example": "\"auth.meet.example.org\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.ntfy-sh.package": {
+    "name": "services.ntfy-sh.package",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/ntfy-sh.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/ntfy-sh.nix</a>"
+    ],
+    "description": "<p>The ntfy.sh package to use.</p>",
+    "default": "pkgs.ntfy-sh",
+    "example": "",
+    "option_type": "package",
+    "read_only": false
+  },
+  "boot.initrd.luks.devices.<name>.bypassWorkqueues": {
+    "name": "boot.initrd.luks.devices.<name>.bypassWorkqueues",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/luksroot.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/luksroot.nix</a>"
+    ],
+    "description": "<p>Whether to bypass dm-crypt's internal read and write workqueues.\nEnabling this should improve performance on SSDs; see\n<a href=\"https://wiki.archlinux.org/index.php/Dm-crypt/Specialties#Disable_workqueue_for_increased_solid_state_drive_(SSD)_performance\">here</a>\nfor more information. Needs Linux 5.9 or later.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.spiped.config.<name>.maxConns": {
+    "name": "services.spiped.config.<name>.maxConns",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/spiped.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/spiped.nix</a>"
+    ],
+    "description": "<p>Limit on the number of simultaneous connections allowed.</p>\n",
+    "default": "100",
+    "example": "",
+    "option_type": "signed integer",
+    "read_only": false
+  },
+  "services.prometheus.exporters.shelly.openFirewall": {
+    "name": "services.prometheus.exporters.shelly.openFirewall",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix</a>"
+    ],
+    "description": "<p>Open port in firewall for incoming connections.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "programs.extra-container.enable": {
+    "name": "programs.extra-container.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/extra-container.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/extra-container.nix</a>"
+    ],
+    "description": "<p>Whether to enable extra-container, a tool for running declarative NixOS containers\nwithout host system rebuilds\n.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.lldap.settings.ldap_port": {
+    "name": "services.lldap.settings.ldap_port",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/databases/lldap.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/databases/lldap.nix</a>"
+    ],
+    "description": "<p>The port on which to have the LDAP server.</p>",
+    "default": "3890",
+    "example": "",
+    "option_type": "16 bit unsigned integer; between 0 and 65535 (both inclusive)",
+    "read_only": false
+  },
+  "services.coturn.static-auth-secret-file": {
+    "name": "services.coturn.static-auth-secret-file",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/coturn.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/coturn.nix</a>"
+    ],
+    "description": "<p>Path to the file containing the static authentication secret.</p>\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "services.tt-rss.database.port": {
+    "name": "services.tt-rss.database.port",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/tt-rss.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/tt-rss.nix</a>"
+    ],
+    "description": "<p>The database's port. If not set, the default ports will be provided (5432\nand 3306 for pgsql and mysql respectively).</p>\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or 16 bit unsigned integer; between 0 and 65535 (both inclusive)",
+    "read_only": false
+  },
+  "services.nginx.virtualHosts.<name>.basicAuthFile": {
+    "name": "services.nginx.virtualHosts.<name>.basicAuthFile",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/nginx/base-module.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/nginx/base-module.nix</a>"
+    ],
+    "description": "<p>Basic Auth password file for a vhost.\nCan be created via: &lt;command&gt;htpasswd -c &lt;filename&gt; &lt;username&gt;&lt;/command&gt;.</p>\n<p>WARNING: The generate file contains the users' passwords in a\nnon-cryptographically-securely hashed way.</p>\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or path",
+    "read_only": false
+  },
+  "services.apache-kafka.configFiles.serverProperties": {
+    "name": "services.apache-kafka.configFiles.serverProperties",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/apache-kafka.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/apache-kafka.nix</a>"
+    ],
+    "description": "<p>Kafka server.properties configuration file path.\nDefaults to the rendered <code>settings</code>.</p>\n",
+    "default": "",
+    "example": "",
+    "option_type": "path",
+    "read_only": false
+  },
+  "services.bookstack.nginx.listenAddresses": {
+    "name": "services.bookstack.nginx.listenAddresses",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/bookstack.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/bookstack.nix</a>"
+    ],
+    "description": "<p>Listen addresses for this virtual host.\nCompared to <code>listen</code> this only sets the addresses\nand the ports are chosen automatically.</p>\n<p>Note: This option overrides <code>enableIPv6</code></p>\n",
+    "default": "[ ]",
+    "example": "[\n  \"127.0.0.1\"\n  \"[::1]\"\n]",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "flyingcircus.services.varnish.virtualHosts": {
+    "name": "flyingcircus.services.varnish.virtualHosts",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/default.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/default.nix</a>"
+    ],
+    "description": "<p>This option has no description.</p>",
+    "default": "{ }",
+    "example": "",
+    "option_type": "attribute set of (submodule)",
+    "read_only": false
+  },
+  "services.xserver.libinput.mouse.disableWhileTyping": {
+    "name": "services.xserver.libinput.mouse.disableWhileTyping",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/x11/hardware/libinput.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/x11/hardware/libinput.nix</a>"
+    ],
+    "description": "<p>Disable input method while typing.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "security.doas.extraRules": {
+    "name": "security.doas.extraRules",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/security/doas.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/security/doas.nix</a>"
+    ],
+    "description": "<p>Define specific rules to be set in the\n{file}<code>/etc/doas.conf</code> file. More specific rules should\ncome after more general ones in order to yield the expected behavior.\nYou can use <code>mkBefore</code> and/or <code>mkAfter</code> to ensure\nthis is the case when configuration options are merged. Be aware that\nthis option cannot be used to override the behaviour allowing\npasswordless operation for root.</p>\n",
+    "default": "[ ]",
+    "example": "[\n  # Allow execution of any command by any user in group doas, requiring\n  # a password and keeping any previously-defined environment variables.\n  { groups = [ \"doas\" ]; noPass = false; keepEnv = true; }\n\n  # Allow execution of \"/home/root/secret.sh\" by user `backup` OR user\n  # `database` OR any member of the group with GID `1006`, without a\n  # password.\n  { users = [ \"backup\" \"database\" ]; groups = [ 1006 ];\n    cmd = \"/home/root/secret.sh\"; noPass = true; }\n\n  # Allow any member of group `bar` to run `/home/baz/cmd1.sh` as user\n  # `foo` with argument `hello-doas`.\n  { groups = [ \"bar\" ]; runAs = \"foo\";\n    cmd = \"/home/baz/cmd1.sh\"; args = [ \"hello-doas\" ]; }\n\n  # Allow any member of group `bar` to run `/home/baz/cmd2.sh` as user\n  # `foo` with no arguments.\n  { groups = [ \"bar\" ]; runAs = \"foo\";\n    cmd = \"/home/baz/cmd2.sh\"; args = [ ]; }\n\n  # Allow user `abusers` to execute \"nano\" and unset the value of\n  # SSH_AUTH_SOCK, override the value of ALPHA to 1, and inherit the\n  # value of BETA from the current environment.\n  { users = [ \"abusers\" ]; cmd = \"nano\";\n    setEnv = [ \"-SSH_AUTH_SOCK\" \"ALPHA=1\" \"BETA\" ]; }\n]\n",
+    "option_type": "list of (submodule)",
+    "read_only": false
+  },
+  "services.samba.enable": {
+    "name": "services.samba.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/network-filesystems/samba.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/network-filesystems/samba.nix</a>"
+    ],
+    "description": "<p>Whether to enable Samba, which provides file and print\nservices to Windows clients through the SMB/CIFS protocol.</p>\n<p>::: {.note}\nIf you use the firewall consider adding the following:</p>\n<pre><code>services.samba.openFirewall = true;\n</code></pre>\n<p>:::</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.znc.confOptions.useSSL": {
+    "name": "services.znc.confOptions.useSSL",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/znc/options.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/znc/options.nix</a>"
+    ],
+    "description": "<p>Indicates whether the ZNC server should use SSL when listening on\nthe specified port. A self-signed certificate will be generated.</p>\n",
+    "default": "true",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.webhook.hooksTemplated": {
+    "name": "services.webhook.hooksTemplated",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/webhook.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/webhook.nix</a>"
+    ],
+    "description": "<p>Same as {option}<code>hooks</code>, but these hooks are specified as literal strings instead of Nix values,\nand hence can include <a href=\"https://github.com/adnanh/webhook/blob/master/docs/Templates.md\">template syntax</a>\nwhich might not be representable as JSON.</p>\n<p>Template syntax requires the {option}<code>enableTemplates</code> option to be set to <code>true</code>, which is\ndone by default if this option is set.</p>\n",
+    "default": "{ }",
+    "example": "{\n  echo-template = ''\n    {\n      \"id\": \"echo-template\",\n      \"execute-command\": \"echo\",\n      \"response-message\": \"{{ getenv \"MESSAGE\" }}\"\n    }\n  '';\n}",
+    "option_type": "attribute set of string",
+    "read_only": false
+  },
+  "services.buildbot-master.packages": {
+    "name": "services.buildbot-master.packages",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/continuous-integration/buildbot/master.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/continuous-integration/buildbot/master.nix</a>"
+    ],
+    "description": "<p>Packages to add to PATH for the buildbot process.</p>",
+    "default": "[ pkgs.git ]",
+    "example": "",
+    "option_type": "list of package",
+    "read_only": false
+  },
+  "flyingcircus.services.sensu-client.checks.<name>.interval": {
+    "name": "flyingcircus.services.sensu-client.checks.<name>.interval",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/sensu/client.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/sensu/client.nix</a>"
+    ],
+    "description": "<p>The interval (in seconds) how often this check should be performed.</p>",
+    "default": "60",
+    "example": "",
+    "option_type": "signed integer",
+    "read_only": false
+  },
+  "services.jupyter.notebookConfig": {
+    "name": "services.jupyter.notebookConfig",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/development/jupyter/default.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/development/jupyter/default.nix</a>"
+    ],
+    "description": "<p>Raw jupyter config.</p>\n",
+    "default": "\"\"",
+    "example": "",
+    "option_type": "strings concatenated with \"\\n\"",
+    "read_only": false
+  },
+  "services.prosody.modules.groups": {
+    "name": "services.prosody.modules.groups",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/jitsi/prosody.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/jitsi/prosody.nix</a>"
+    ],
+    "description": "<p>Shared roster support</p>",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.etcd.initialAdvertisePeerUrls": {
+    "name": "services.etcd.initialAdvertisePeerUrls",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/etcd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/etcd.nix</a>"
+    ],
+    "description": "<p>Etcd list of this member's peer URLs to advertise to rest of the cluster.</p>",
+    "default": "config.services.etcd.listenPeerUrls",
+    "example": "",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.geoclue2.enable": {
+    "name": "services.geoclue2.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/desktops/geoclue2.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/desktops/geoclue2.nix</a>"
+    ],
+    "description": "<p>Whether to enable GeoClue 2 daemon, a DBus service\nthat provides location information for accessing.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.thanos.query-frontend.grpc-server-tls-key": {
+    "name": "services.thanos.query-frontend.grpc-server-tls-key",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/thanos.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/thanos.nix</a>"
+    ],
+    "description": "<p>TLS Key for the gRPC server, leave blank to disable TLS</p>\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "services.mosquitto.logType": {
+    "name": "services.mosquitto.logType",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/mosquitto.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/mosquitto.nix</a>"
+    ],
+    "description": "<p>Types of messages to log.</p>\n",
+    "default": "[ ]",
+    "example": "",
+    "option_type": "list of (one of \"debug\", \"error\", \"warning\", \"notice\", \"information\", \"subscribe\", \"unsubscribe\", \"websockets\", \"none\", \"all\")",
+    "read_only": false
+  },
+  "services.prometheus.exporters.process.extraFlags": {
+    "name": "services.prometheus.exporters.process.extraFlags",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix</a>"
+    ],
+    "description": "<p>Extra commandline options to pass to the process exporter.</p>\n",
+    "default": "[ ]",
+    "example": "",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.limesurvey.virtualHost.extraConfig": {
+    "name": "services.limesurvey.virtualHost.extraConfig",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/limesurvey.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/limesurvey.nix</a>"
+    ],
+    "description": "<p>These lines go to httpd.conf verbatim. They will go after\ndirectories and directory aliases defined by default.</p>\n",
+    "default": "\"\"",
+    "example": "''\n  <Directory /home>\n    Options FollowSymlinks\n    AllowOverride All\n  </Directory>\n''",
+    "option_type": "strings concatenated with \"\\n\"",
+    "read_only": false
+  },
+  "systemd.services.<name>.stopIfChanged": {
+    "name": "systemd.services.<name>.stopIfChanged",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/systemd.nix</a>"
+    ],
+    "description": "<p>If set, a changed unit is restarted by calling\n{command}<code>systemctl stop</code> in the old configuration,\nthen {command}<code>systemctl start</code> in the new one.\nOtherwise, it is restarted in a single step using\n{command}<code>systemctl restart</code> in the new configuration.\nThe latter is less correct because it runs the\n<code>ExecStop</code> commands from the new\nconfiguration.</p>\n",
+    "default": "true",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.slurm.clusterName": {
+    "name": "services.slurm.clusterName",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/computing/slurm/slurm.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/computing/slurm/slurm.nix</a>"
+    ],
+    "description": "<p>Necessary to distinguish accounting records in a multi-cluster environment.</p>\n",
+    "default": "\"default\"",
+    "example": "\"myCluster\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.xserver.inputClassSections": {
+    "name": "services.xserver.inputClassSections",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/x11/xserver.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/x11/xserver.nix</a>"
+    ],
+    "description": "<p>Content of additional InputClass sections of the X server configuration file.</p>",
+    "default": "[ ]",
+    "example": "[ ''\n    Identifier      \"Trackpoint Wheel Emulation\"\n    MatchProduct    \"ThinkPad USB Keyboard with TrackPoint\"\n    Option          \"EmulateWheel\"          \"true\"\n    Option          \"EmulateWheelButton\"    \"2\"\n    Option          \"Emulate3Buttons\"       \"false\"\n  ''\n]\n",
+    "option_type": "list of strings concatenated with \"\\n\"",
+    "read_only": false
+  },
+  "services.rshim.enable": {
+    "name": "services.rshim.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/rshim.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/rshim.nix</a>"
+    ],
+    "description": "<p>Whether to enable user-space rshim driver for the BlueField SoC.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.monero.limits.syncSize": {
+    "name": "services.monero.limits.syncSize",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/monero.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/monero.nix</a>"
+    ],
+    "description": "<p>Maximum number of blocks to sync at once.\nSet to <code>0</code> for adaptive.</p>\n",
+    "default": "0",
+    "example": "",
+    "option_type": "signed integer",
+    "read_only": false
+  },
+  "services.matomo.hostname": {
+    "name": "services.matomo.hostname",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/matomo.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/matomo.nix</a>"
+    ],
+    "description": "<p>URL of the host, without https prefix. You may want to change it if you\nrun Matomo on a different URL than matomo.yourdomain.</p>\n",
+    "default": "matomo.${fqdn}",
+    "example": "\"matomo.yourdomain.org\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.namecoind.rpc.certificate": {
+    "name": "services.namecoind.rpc.certificate",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/namecoind.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/namecoind.nix</a>"
+    ],
+    "description": "<p>Certificate file for securing RPC connections.</p>\n",
+    "default": "null",
+    "example": "\"/var/lib/namecoind/server.cert\"",
+    "option_type": "null or path",
+    "read_only": false
+  },
+  "services.nsd.zones.<name>.dnssec": {
+    "name": "services.nsd.zones.<name>.dnssec",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/nsd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/nsd.nix</a>"
+    ],
+    "description": "<p>Whether to enable DNSSEC.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.sitespeed-io.runs.*.urls": {
+    "name": "services.sitespeed-io.runs.*.urls",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/sitespeed-io.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/sitespeed-io.nix</a>"
+    ],
+    "description": "<p>URLs the service should monitor.</p>\n",
+    "default": "[ ]",
+    "example": "",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.authelia.instances.<name>.settings.log.keep_stdout": {
+    "name": "services.authelia.instances.<name>.settings.log.keep_stdout",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/authelia.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/authelia.nix</a>"
+    ],
+    "description": "<p>Whether to also log to stdout when a <code>file_path</code> is defined.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.matomo.nginx.useACMEHost": {
+    "name": "services.matomo.nginx.useACMEHost",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/matomo.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/matomo.nix</a>"
+    ],
+    "description": "<p>A host of an existing Let's Encrypt certificate to use.\nThis is useful if you have many subdomains and want to avoid hitting the</p>\n&lt;link xlink:href=&quot;https://letsencrypt.org/docs/rate-limits/&quot;&gt;rate limit&lt;/link&gt;.\nAlternately, you can generate a certificate through &lt;option&gt;enableACME&lt;/option&gt;.\n&lt;emphasis&gt;Note that this option does not create any certificates, nor it does add subdomains to existing ones – you will need to create them manually using  &lt;xref linkend=&quot;opt-security.acme.certs&quot;/&gt;.&lt;/emphasis&gt;\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "services.prosody.modules.version": {
+    "name": "services.prosody.modules.version",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/jitsi/prosody.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/services/jitsi/prosody.nix</a>"
+    ],
+    "description": "<p>Replies to server version requests</p>",
+    "default": "true",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.kubernetes.masterAddress": {
+    "name": "services.kubernetes.masterAddress",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/cluster/kubernetes/default.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/cluster/kubernetes/default.nix</a>"
+    ],
+    "description": "<p>Clusterwide available network address or hostname for the kubernetes master server.</p>",
+    "default": "",
+    "example": "\"master.example.com\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.pixelfed.nginx.listen.*.ssl": {
+    "name": "services.pixelfed.nginx.listen.*.ssl",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/pixelfed.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/pixelfed.nix</a>"
+    ],
+    "description": "<p>Enable SSL.</p>",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.moosefs.metalogger.settings.DATA_PATH": {
+    "name": "services.moosefs.metalogger.settings.DATA_PATH",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/network-filesystems/moosefs.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/network-filesystems/moosefs.nix</a>"
+    ],
+    "description": "<p>Data storage directory</p>",
+    "default": "\"/var/lib/mfs\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.chrony.servers": {
+    "name": "services.chrony.servers",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ntp/chrony.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ntp/chrony.nix</a>"
+    ],
+    "description": "<p>The set of NTP servers from which to synchronise.</p>\n",
+    "default": "config.networking.timeServers",
+    "example": "",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.i2pd.ntcpProxy": {
+    "name": "services.i2pd.ntcpProxy",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/i2pd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/i2pd.nix</a>"
+    ],
+    "description": "<p>Proxy URL for NTCP transport.</p>\n",
+    "default": "null",
+    "example": "",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "systemd.network.config.addRouteTablesToIPRoute2": {
+    "name": "systemd.network.config.addRouteTablesToIPRoute2",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/networkd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/networkd.nix</a>"
+    ],
+    "description": "<p>If true and routeTables are set, then the specified route tables\nwill also be installed into /etc/iproute2/rt_tables.</p>\n",
+    "default": "true",
+    "example": "false",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services._3proxy.services.*.acl.*.targets": {
+    "name": "services._3proxy.services.*.acl.*.targets",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/3proxy.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/3proxy.nix</a>"
+    ],
+    "description": "<p>List of target IP ranges, use empty list for any.\nMay also contain host names instead of addresses.\nIt's possible to use wildmask in the beginning and in the the end of hostname, e.g. <code>*badsite.com</code> or <code>*badcontent*</code>.\nHostname is only checked if hostname presents in request.</p>\n",
+    "default": "[ ]",
+    "example": "[\n  \"127.0.0.1\"\n  \"192.168.1.0/24\"\n]",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.thanos.query.endpoints": {
+    "name": "services.thanos.query.endpoints",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/thanos.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/thanos.nix</a>"
+    ],
+    "description": "<p>Addresses of statically configured Thanos API servers (repeatable).</p>\n<p>The scheme may be prefixed with 'dns+' or 'dnssrv+' to detect\nThanos API servers through respective DNS lookups.</p>\n",
+    "default": "[ ]",
+    "example": "",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.postfix.enable": {
+    "name": "services.postfix.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/mail/postfix.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/mail/postfix.nix</a>"
+    ],
+    "description": "<p>Whether to run the Postfix mail server.</p>",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.httpd.virtualHosts.<name>.hostName": {
+    "name": "services.httpd.virtualHosts.<name>.hostName",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-servers/apache-httpd/default.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-servers/apache-httpd/default.nix</a>"
+    ],
+    "description": "<p>Canonical hostname for the server.</p>",
+    "default": "\"‹name›\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  },
+  "security.pam.enableOTPW": {
+    "name": "security.pam.enableOTPW",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/security/pam.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/security/pam.nix</a>"
+    ],
+    "description": "<p>Whether to enable the OTPW (one-time password) PAM module.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.confd.package": {
+    "name": "services.confd.package",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/confd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/confd.nix</a>"
+    ],
+    "description": "<p>Confd package to use.</p>",
+    "default": "pkgs.confd",
+    "example": "",
+    "option_type": "package",
+    "read_only": false
+  },
+  "services.prometheus.exporters.buildkite-agent.openFirewall": {
+    "name": "services.prometheus.exporters.buildkite-agent.openFirewall",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix</a>"
+    ],
+    "description": "<p>Open port in firewall for incoming connections.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.tor.settings.SOCKSPort": {
+    "name": "services.tor.settings.SOCKSPort",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/tor.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/security/tor.nix</a>"
+    ],
+    "description": "<p>See <a href=\"https://2019.www.torproject.org/docs/tor-manual.html.en#SOCKSPort\">torrc manual</a>.</p>\n",
+    "default": "if config.services.tor.settings.HiddenServiceNonAnonymousMode == true\nthen [ { port = 0; } ]\nelse [ ]\n",
+    "example": "[\n  {\n    port = 9090;\n  }\n]",
+    "option_type": "list of (16 bit unsigned integer; between 0 and 65535 (both inclusive) or (submodule))",
+    "read_only": false
+  },
+  "services.ofono.plugins": {
+    "name": "services.ofono.plugins",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ofono.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/ofono.nix</a>"
+    ],
+    "description": "<p>The list of plugins to install.</p>\n",
+    "default": "[ ]",
+    "example": "[ pkgs.modem-manager-gui ]",
+    "option_type": "list of package",
+    "read_only": false
+  },
+  "services.zabbixWeb.virtualHost.listen.*.ssl": {
+    "name": "services.zabbixWeb.virtualHost.listen.*.ssl",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/zabbix.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/zabbix.nix</a>"
+    ],
+    "description": "<p>Whether to enable SSL (https) support.</p>",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.gitea.enable": {
+    "name": "services.gitea.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/gitea.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/gitea.nix</a>"
+    ],
+    "description": "<p>Enable Gitea Service.</p>",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.prometheus.exporters.pve.package": {
+    "name": "services.prometheus.exporters.pve.package",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix</a>"
+    ],
+    "description": "<p>The package to use for prometheus-pve-exporter</p>\n",
+    "default": "pkgs.prometheus-pve-exporter",
+    "example": "pkgs.prometheus-pve-exporter",
+    "option_type": "package",
+    "read_only": false
+  },
+  "mailserver.fullTextSearch.memoryLimit": {
+    "name": "mailserver.fullTextSearch.memoryLimit",
+    "declarations": [
+      "<i>/nix/store/45xhglr7sxx77vjm67yr9xqd9405kzqw-nixos-mailserver-871e767</i>"
+    ],
+    "description": "<p>Memory limit for the indexer process, in MiB. If null, leaves the default (which is rather low), and if 0, no limit.</p>",
+    "default": "null",
+    "example": "2000",
+    "option_type": "null or signed integer",
+    "read_only": false
+  },
+  "hardware.rasdaemon.testing": {
+    "name": "hardware.rasdaemon.testing",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/hardware/rasdaemon.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/hardware/rasdaemon.nix</a>"
+    ],
+    "description": "<p>Whether to enable error injection infrastructure.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.rustus.storage.s3_region": {
+    "name": "services.rustus.storage.s3_region",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-servers/rustus.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-servers/rustus.nix</a>"
+    ],
+    "description": "<p>S3 region name.</p>",
+    "default": "\"us-east-1\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  },
+  "users.mysql.pam.logging.table": {
+    "name": "users.mysql.pam.logging.table",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/config/mysql.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/config/mysql.nix</a>"
+    ],
+    "description": "<p>The name of the table to which logs are written.</p>",
+    "default": "",
+    "example": "\"logs\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "services.elasticsearch.port": {
+    "name": "services.elasticsearch.port",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/search/elasticsearch.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/search/elasticsearch.nix</a>"
+    ],
+    "description": "<p>Elasticsearch port to listen for HTTP traffic.</p>",
+    "default": "9200",
+    "example": "",
+    "option_type": "16 bit unsigned integer; between 0 and 65535 (both inclusive)",
+    "read_only": false
+  },
+  "services.cassandra.jmxPort": {
+    "name": "services.cassandra.jmxPort",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/databases/cassandra.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/databases/cassandra.nix</a>"
+    ],
+    "description": "<p>Specifies the default port over which Cassandra will be available for\nJMX connections.\nFor security reasons, you should not expose this port to the internet.\nFirewall it if needed.</p>\n",
+    "default": "7199",
+    "example": "",
+    "option_type": "signed integer",
+    "read_only": false
+  },
+  "services.undervolt.useTimer": {
+    "name": "services.undervolt.useTimer",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/hardware/undervolt.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/hardware/undervolt.nix</a>"
+    ],
+    "description": "<p>Whether to set a timer that applies the undervolt settings every 30s.\nThis will cause spam in the journal but might be required for some\nhardware under specific conditions.\nEnable this if your undervolt settings don't hold.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "boot.initrd.network.flushBeforeStage2": {
+    "name": "boot.initrd.network.flushBeforeStage2",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/initrd-network.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/system/boot/initrd-network.nix</a>"
+    ],
+    "description": "<p>Whether to clear the configuration of the interfaces that were set up in\nthe initrd right before stage 2 takes over. Stage 2 will do the regular network\nconfiguration based on the NixOS networking options.</p>\n<p>The default is false when systemd is enabled in initrd,\nbecause the systemd-networkd documentation suggests it.</p>\n",
+    "default": "\"!config.boot.initrd.systemd.enable\"",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.vsftpd.rsaCertFile": {
+    "name": "services.vsftpd.rsaCertFile",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/vsftpd.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/vsftpd.nix</a>"
+    ],
+    "description": "<p>RSA certificate file.</p>",
+    "default": "null",
+    "example": "",
+    "option_type": "null or path",
+    "read_only": false
+  },
+  "services.prometheus.exporters.unpoller.enable": {
+    "name": "services.prometheus.exporters.unpoller.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/monitoring/prometheus/exporters.nix</a>"
+    ],
+    "description": "<p>Whether to enable the prometheus unpoller exporter.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "system.autoUpgrade.allowReboot": {
+    "name": "system.autoUpgrade.allowReboot",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/tasks/auto-upgrade.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/tasks/auto-upgrade.nix</a>"
+    ],
+    "description": "<p>Reboot the system into the new generation instead of a switch\nif the new generation uses a different kernel, kernel modules\nor initrd than the booted system.\nSee {option}<code>rebootWindow</code> for configuring the times at which a reboot is allowed.</p>\n",
+    "default": "false",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "programs.gnupg.package": {
+    "name": "programs.gnupg.package",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/gnupg.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/gnupg.nix</a>"
+    ],
+    "description": "<p>The gpg package that should be used.</p>\n",
+    "default": "pkgs.gnupg",
+    "example": "",
+    "option_type": "package",
+    "read_only": false
+  },
+  "services.consul.extraConfigFiles": {
+    "name": "services.consul.extraConfigFiles",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/consul.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/consul.nix</a>"
+    ],
+    "description": "<p>Additional configuration files to pass to consul\nNOTE: These will not trigger the service to be restarted when altered.</p>\n",
+    "default": "[ ]",
+    "example": "",
+    "option_type": "list of string",
+    "read_only": false
+  },
+  "services.peertube.database.host": {
+    "name": "services.peertube.database.host",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/peertube.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/peertube.nix</a>"
+    ],
+    "description": "<p>Database host address or unix socket.</p>",
+    "default": "if config.services.peertube.database.createLocally\nthen \"/run/postgresql\"\nelse null\n",
+    "example": "\"192.168.15.47\"",
+    "option_type": "string",
+    "read_only": false
+  },
+  "flyingcircus.roles.jitsi.coturn.enable": {
+    "name": "flyingcircus.roles.jitsi.coturn.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/roles/default.nix\">https://github.com/flyingcircusio/fc-nixos/blob/fc-23.11-dev/nixos/roles/default.nix</a>"
+    ],
+    "description": "<p>Whether to enable Enable a local coturn preconfigured for Jitsi\nMachines with Jitsi and a local coturn need two public IP addresses.\n.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "networking.bonds.<name>.xmit_hash_policy": {
+    "name": "networking.bonds.<name>.xmit_hash_policy",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/tasks/network-interfaces.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/tasks/network-interfaces.nix</a>"
+    ],
+    "description": "<p>DEPRECATED, use <code>driverOptions</code>.\nSelects the transmit hash policy to use for slave selection in\nbalance-xor, 802.3ad, and tlb modes.</p>\n",
+    "default": "null",
+    "example": "\"layer2+3\"",
+    "option_type": "null or string",
+    "read_only": false
+  },
+  "services.calibre-server.package": {
+    "name": "services.calibre-server.package",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/calibre-server.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/misc/calibre-server.nix</a>"
+    ],
+    "description": "<p>The calibre package to use.</p>",
+    "default": "pkgs.calibre",
+    "example": "",
+    "option_type": "package",
+    "read_only": false
+  },
+  "services.xserver.libinput.touchpad.tapping": {
+    "name": "services.xserver.libinput.touchpad.tapping",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/x11/hardware/libinput.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/x11/hardware/libinput.nix</a>"
+    ],
+    "description": "<p>Enables or disables tap-to-click behavior.</p>\n",
+    "default": "true",
+    "example": "",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "programs.k40-whisperer.enable": {
+    "name": "programs.k40-whisperer.enable",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/k40-whisperer.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/programs/k40-whisperer.nix</a>"
+    ],
+    "description": "<p>Whether to enable K40-Whisperer.</p>",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.snipe-it.nginx.locations.<name>.proxyWebsockets": {
+    "name": "services.snipe-it.nginx.locations.<name>.proxyWebsockets",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/snipe-it.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/web-apps/snipe-it.nix</a>"
+    ],
+    "description": "<p>Whether to support proxying websocket connections with HTTP/1.1.</p>\n",
+    "default": "false",
+    "example": "true",
+    "option_type": "boolean",
+    "read_only": false
+  },
+  "services.go-neb.bindAddress": {
+    "name": "services.go-neb.bindAddress",
+    "declarations": [
+      "<a class=\"text-blue-900 hover:underline\" href=\"https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/go-neb.nix\">https://github.com/nixos/nixpkgs/blob/master/nixos/modules/services/networking/go-neb.nix</a>"
+    ],
+    "description": "<p>Port (and optionally address) to listen on.</p>",
+    "default": "\":4050\"",
+    "example": "",
+    "option_type": "string",
+    "read_only": false
+  }
+}

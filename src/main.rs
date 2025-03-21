@@ -22,10 +22,7 @@ struct Args {
     #[arg(long)]
     state_dir: Option<PathBuf>,
 
-    /// fetch + index a single branch at a specific revision
-    /// only use for testing purposes
-    /// default behaviour is to fetch all branches from hydra
-    /// and build all of them
+    /// run a test version with pre-compile options + packages and no updater
     #[arg(long)]
     test: bool,
 }
@@ -34,37 +31,36 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    // enable tokio-console for testing
-    if args.test {
-        console_subscriber::init();
-    } else {
-        tracing_subscriber::registry()
-            .with(
-                tracing_subscriber::EnvFilter::try_from_default_env()
-                    .unwrap_or_else(|_| "fc_search=debug,tokio=trace,runtime=trace".into()),
-            )
-            .with(tracing_subscriber::fmt::layer())
-            .init();
-    }
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "fc_search=debug,tokio=trace,runtime=trace".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
-    if let Some(state_dir) = args.state_dir {
-        info!("Persistent state dir is {}", state_dir.display());
-        backend::run(args.port, &state_dir, args.test).await?;
-    } else {
+    let state_dir = args.state_dir.unwrap_or_else(|| {
         let temp_state_dir = TempDir::new().unwrap();
         info!("Temporary state dir is {}", temp_state_dir.path().display());
 
         // remove the temp dir on ctrl-c
         let path: PathBuf = temp_state_dir.path().to_path_buf();
+        let handler_path = path.clone();
         ctrlc::set_handler(move || {
-            info!("Removing temporary state dir: {}", path.display());
-            std::fs::remove_dir_all(&path)
+            info!("Removing temporary state dir: {}", handler_path.display());
+            std::fs::remove_dir_all(&handler_path)
                 .unwrap_or_else(|e| warn!("failed to remove temp state dir {:?}", e));
             exit(0);
         })
         .expect("failed to set a handler for c-c");
+        path
+    });
+    info!("State dir is {}", state_dir.display());
 
-        backend::run(args.port, temp_state_dir.path(), args.test).await?;
+    if args.test {
+        backend::run_test(args.port, &state_dir).await?;
+    } else {
+        backend::run(args.port, &state_dir).await?;
     }
 
     Ok(())

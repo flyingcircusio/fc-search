@@ -1,0 +1,2005 @@
+{
+  "offlineimap": {
+    "attribute_name": "offlineimap",
+    "default_output": "out",
+    "description": "Synchronize emails between two repositories, so that you can read the same mailbox from multiple computers",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "offlineimap-8.0.0",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "8.0.0",
+    "homepage": "http://offlineimap.org/"
+  },
+  "phosh-mobile-settings": {
+    "attribute_name": "phosh-mobile-settings",
+    "default_output": "out",
+    "description": "A settings app for mobile specific things",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "phosh-mobile-settings-0.23.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.23.1",
+    "homepage": "https://gitlab.gnome.org/guidog/phosh-mobile-settings"
+  },
+  "spark_3_3": {
+    "attribute_name": "spark_3_3",
+    "default_output": "out",
+    "description": "Apache Spark is a fast and general engine for large-scale data processing",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "spark-3.3.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "3.3.2",
+    "homepage": "https://spark.apache.org/"
+  },
+  "agrep": {
+    "attribute_name": "agrep",
+    "default_output": "out",
+    "description": "Approximate grep for fast fuzzy string searching",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "ISC License",
+      "redistributable": true,
+      "shortName": "isc",
+      "spdxId": "ISC",
+      "url": "https://spdx.org/licenses/ISC.html"
+    },
+    "name": "agrep-3.41.5",
+    "outputs": [
+      "out"
+    ],
+    "version": "3.41.5",
+    "homepage": "https://www.tgries.de/agrep/"
+  },
+  "libepoxy": {
+    "attribute_name": "libepoxy",
+    "default_output": "out",
+    "description": "A library for handling OpenGL function pointer management",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "libepoxy-1.5.10",
+    "outputs": [
+      "out",
+      "dev"
+    ],
+    "version": "1.5.10",
+    "homepage": "https://github.com/anholt/libepoxy"
+  },
+  "treemix": {
+    "attribute_name": "treemix",
+    "default_output": "out",
+    "description": "Inference of patterns of population splitting and mixing from genome-wide allele frequency data",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 only",
+      "redistributable": true,
+      "shortName": "gpl3Only",
+      "spdxId": "GPL-3.0-only",
+      "url": "https://spdx.org/licenses/GPL-3.0-only.html"
+    },
+    "name": "treemix-1.13",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.13",
+    "homepage": "https://bitbucket.org/nygcresearch/treemix/wiki/Home"
+  },
+  "electron_11-bin": {
+    "attribute_name": "electron_11-bin",
+    "default_output": "out",
+    "description": "Cross platform desktop application shell",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "electron-11.5.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "11.5.0",
+    "homepage": "https://github.com/electron/electron"
+  },
+  "kthxbye": {
+    "attribute_name": "kthxbye",
+    "default_output": "out",
+    "description": "Prometheus Alertmanager alert acknowledgement management daemon",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "kthxbye-0.16",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.16",
+    "homepage": "https://github.com/prymitive/kthxbye"
+  },
+  "i-dot-ming": {
+    "attribute_name": "i-dot-ming",
+    "default_output": "out",
+    "description": "An open source Pan-CJK serif typeface",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "IPA Font License",
+      "redistributable": true,
+      "shortName": "ipa",
+      "spdxId": "IPA",
+      "url": "https://spdx.org/licenses/IPA.html"
+    },
+    "name": "i.ming-8.00",
+    "outputs": [
+      "out"
+    ],
+    "version": "8.00",
+    "homepage": "https://github.com/ichitenfont/I.Ming"
+  },
+  "rpPPPoE": {
+    "attribute_name": "rpPPPoE",
+    "default_output": "out",
+    "description": "Roaring Penguin Point-to-Point over Ethernet tool",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "rp-pppoe-3.12",
+    "outputs": [
+      "out"
+    ],
+    "version": "3.12",
+    "homepage": "https://www.roaringpenguin.com/products/pppoe"
+  },
+  "s6-networking-man-pages": {
+    "attribute_name": "s6-networking-man-pages",
+    "default_output": "out",
+    "description": "Port of the documentation for the s6-networking suite to mdoc",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "ISC License",
+      "redistributable": true,
+      "shortName": "isc",
+      "spdxId": "ISC",
+      "url": "https://spdx.org/licenses/ISC.html"
+    },
+    "name": "s6-networking-man-pages-2.5.1.3.3",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.5.1.3.3",
+    "homepage": "https://git.sr.ht/~flexibeast/s6-networking-man-pages"
+  },
+  "lpcnetfreedv": {
+    "attribute_name": "lpcnetfreedv",
+    "default_output": "out",
+    "description": "Experimental Neural Net speech coding for FreeDV",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "BSD 3-clause \"New\" or \"Revised\" License",
+      "redistributable": true,
+      "shortName": "bsd3",
+      "spdxId": "BSD-3-Clause",
+      "url": "https://spdx.org/licenses/BSD-3-Clause.html"
+    },
+    "name": "lpcnetfreedv-unstable-2022-08-22",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2022-08-22",
+    "homepage": "https://freedv.org/"
+  },
+  "brscan4": {
+    "attribute_name": "brscan4",
+    "default_output": "out",
+    "description": "Brother brscan4 sane backend driver",
+    "camelCase": null,
+    "license": {
+      "free": false,
+      "fullName": "Unfree",
+      "redistributable": false,
+      "shortName": "unfree",
+      "spdxId": null,
+      "url": null
+    },
+    "name": "brscan4-0.4.10-1",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.4.10-1",
+    "homepage": "http://www.brother.com/"
+  },
+  "aescrypt": {
+    "attribute_name": "aescrypt",
+    "default_output": "out",
+    "description": "Encrypt files with Advanced Encryption Standard (AES)",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0",
+      "redistributable": true,
+      "shortName": "gpl2",
+      "spdxId": "GPL-2.0",
+      "url": "https://spdx.org/licenses/GPL-2.0.html"
+    },
+    "name": "aescrypt-3.16",
+    "outputs": [
+      "out"
+    ],
+    "version": "3.16",
+    "homepage": "https://www.aescrypt.com/"
+  },
+  "qmediathekview": {
+    "attribute_name": "qmediathekview",
+    "default_output": "out",
+    "description": "An alternative Qt-based front-end for the database maintained by the MediathekView project",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "QMediathekView-0.2.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.2.1",
+    "homepage": "https://github.com/adamreichold/QMediathekView"
+  },
+  "ats2": {
+    "attribute_name": "ats2",
+    "default_output": "out",
+    "description": "Functional programming language with dependent types",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "ats2-0.4.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.4.2",
+    "homepage": "http://www.ats-lang.org/"
+  },
+  "zoekt": {
+    "attribute_name": "zoekt",
+    "default_output": "out",
+    "description": "Fast trigram based code search",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "zoekt-unstable-2022-11-09",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2022-11-09",
+    "homepage": "https://github.com/google/zoekt"
+  },
+  "er-patcher": {
+    "attribute_name": "er-patcher",
+    "default_output": "out",
+    "description": "Enhancement patches for Elden Ring adding ultrawide support, custom frame rate limits and more",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "er-patcher-1.06-3",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.06-3",
+    "homepage": "https://github.com/gurrgur/er-patcher"
+  },
+  "libffi": {
+    "attribute_name": "libffi",
+    "default_output": "out",
+    "description": "A foreign function call interface library",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "libffi-3.4.4",
+    "outputs": [
+      "out",
+      "dev",
+      "man",
+      "info"
+    ],
+    "version": "3.4.4",
+    "homepage": "http://sourceware.org/libffi/"
+  },
+  "nbqa": {
+    "attribute_name": "nbqa",
+    "default_output": "out",
+    "description": "Run ruff, isort, pyupgrade, mypy, pylint, flake8, black, blacken-docs, and more on Jupyter Notebooks",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "nbqa-1.7.0",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "1.7.0",
+    "homepage": "https://github.com/nbQA-dev/nbQA"
+  },
+  "edgetx": {
+    "attribute_name": "edgetx",
+    "default_output": "out",
+    "description": "EdgeTX Companion transmitter support software",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 only",
+      "redistributable": true,
+      "shortName": "gpl2Only",
+      "spdxId": "GPL-2.0-only",
+      "url": "https://spdx.org/licenses/GPL-2.0-only.html"
+    },
+    "name": "edgetx-2.7.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.7.2",
+    "homepage": "https://edgetx.org/"
+  },
+  "wooting-udev-rules": {
+    "attribute_name": "wooting-udev-rules",
+    "default_output": "out",
+    "description": "udev rules that give NixOS permission to communicate with Wooting keyboards",
+    "camelCase": null,
+    "license": "unknown",
+    "name": "wooting-udev-rules-unstable-2023-03-31",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2023-03-31",
+    "homepage": "https://help.wooting.io/en/article/wootility-configuring-device-access-for-wootility-under-linux-udev-rules-r6lb2o/"
+  },
+  "autoconf271": {
+    "attribute_name": "autoconf271",
+    "default_output": "out",
+    "description": "Part of the GNU Build System",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "autoconf-2.71",
+    "outputs": [
+      "out",
+      "doc"
+    ],
+    "version": "2.71",
+    "homepage": "https://www.gnu.org/software/autoconf/"
+  },
+  "electron_20": {
+    "attribute_name": "electron_20",
+    "default_output": "out",
+    "description": "Cross platform desktop application shell",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "electron-20.3.12",
+    "outputs": [
+      "out"
+    ],
+    "version": "20.3.12",
+    "homepage": "https://github.com/electron/electron"
+  },
+  "libaosd": {
+    "attribute_name": "libaosd",
+    "default_output": "out",
+    "description": null,
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "libaosd-0.2.7-9-g177589f",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.2.7-9-g177589f",
+    "homepage": "https://github.com/atheme-legacy/libaosd"
+  },
+  "maltego": {
+    "attribute_name": "maltego",
+    "default_output": "out",
+    "description": "An open source intelligence and forensics application, enabling to easily gather information about DNS, domains, IP addresses, websites, persons, and so on",
+    "camelCase": null,
+    "license": {
+      "free": false,
+      "fullName": "Unfree",
+      "redistributable": false,
+      "shortName": "unfree",
+      "spdxId": null,
+      "url": null
+    },
+    "name": "maltego-4.7.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "4.7.0",
+    "homepage": "https://www.maltego.com/"
+  },
+  "roboto-mono": {
+    "attribute_name": "roboto-mono",
+    "default_output": "out",
+    "description": "Google Roboto Mono fonts",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "roboto-mono-2.002-20190125",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.002-20190125",
+    "homepage": "https://www.google.com/fonts/specimen/Roboto+Mono"
+  },
+  "x11vnc": {
+    "attribute_name": "x11vnc",
+    "default_output": "out",
+    "description": "A VNC server connected to a real X11 screen",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0",
+      "redistributable": true,
+      "shortName": "gpl2",
+      "spdxId": "GPL-2.0",
+      "url": "https://spdx.org/licenses/GPL-2.0.html"
+    },
+    "name": "x11vnc-0.9.16",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.9.16",
+    "homepage": "https://github.com/LibVNC/x11vnc/"
+  },
+  "xcbuildHook": {
+    "attribute_name": "xcbuildHook",
+    "default_output": "out",
+    "description": null,
+    "camelCase": null,
+    "license": null,
+    "name": "xcbuild-hook",
+    "outputs": [
+      "out"
+    ],
+    "version": "",
+    "homepage": null
+  },
+  "qovery-cli": {
+    "attribute_name": "qovery-cli",
+    "default_output": "out",
+    "description": "Qovery Command Line Interface",
+    "camelCase": null,
+    "license": [
+      {
+        "free": true,
+        "fullName": "Apache License 2.0",
+        "redistributable": true,
+        "shortName": "asl20",
+        "spdxId": "Apache-2.0",
+        "url": "https://spdx.org/licenses/Apache-2.0.html"
+      }
+    ],
+    "name": "qovery-cli-0.74.3",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.74.3",
+    "homepage": "https://github.com/Qovery/qovery-cli"
+  },
+  "gnote": {
+    "attribute_name": "gnote",
+    "default_output": "out",
+    "description": "A note taking application",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 only",
+      "redistributable": true,
+      "shortName": "gpl3Only",
+      "spdxId": "GPL-3.0-only",
+      "url": "https://spdx.org/licenses/GPL-3.0-only.html"
+    },
+    "name": "gnote-45.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "45.0",
+    "homepage": "https://wiki.gnome.org/Apps/Gnote"
+  },
+  "jenkins": {
+    "attribute_name": "jenkins",
+    "default_output": "out",
+    "description": "An extendable open source continuous integration server",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "jenkins-2.440.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.440.2",
+    "homepage": "https://jenkins.io/"
+  },
+  "squirrel-sql": {
+    "attribute_name": "squirrel-sql",
+    "default_output": "out",
+    "description": "Universal SQL Client",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU Lesser General Public License v2.1 or later",
+      "redistributable": true,
+      "shortName": "lgpl21Plus",
+      "spdxId": "LGPL-2.1-or-later",
+      "url": "https://spdx.org/licenses/LGPL-2.1-or-later.html"
+    },
+    "name": "squirrel-sql-4.6.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "4.6.0",
+    "homepage": "http://squirrel-sql.sourceforge.net/"
+  },
+  "broadlink-cli": {
+    "attribute_name": "broadlink-cli",
+    "default_output": "out",
+    "description": "Tools for interfacing with Broadlink RM2/3 (Pro) remote controls, A1 sensor platforms and SP2/3 smartplugs",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "broadlink-cli-0.18.3",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.18.3",
+    "homepage": "https://github.com/mjg59/python-broadlink"
+  },
+  "pinentry_mac": {
+    "attribute_name": "pinentry_mac",
+    "default_output": "out",
+    "description": "Pinentry for GPG on Mac",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "pinentry-mac-1.1.1.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.1.1.1",
+    "homepage": "https://github.com/GPGTools/pinentry-mac"
+  },
+  "libbladeRF": {
+    "attribute_name": "libbladeRF",
+    "default_output": "out",
+    "description": "Supporting library of the BladeRF SDR opensource hardware",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU Lesser General Public License v2.1",
+      "redistributable": true,
+      "shortName": "lgpl21",
+      "spdxId": "LGPL-2.1",
+      "url": "https://spdx.org/licenses/LGPL-2.1.html"
+    },
+    "name": "libbladeRF-2.5.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.5.0",
+    "homepage": "https://nuand.com/libbladeRF-doc"
+  },
+  "dotbot": {
+    "attribute_name": "dotbot",
+    "default_output": "out",
+    "description": "A tool that bootstraps your dotfiles",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "dotbot-1.20.1",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "1.20.1",
+    "homepage": "https://github.com/anishathalye/dotbot"
+  },
+  "chntpw": {
+    "attribute_name": "chntpw",
+    "default_output": "out",
+    "description": "An utility to reset the password of any user that has a valid local account on a Windows system",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0",
+      "redistributable": true,
+      "shortName": "gpl2",
+      "spdxId": "GPL-2.0",
+      "url": "https://spdx.org/licenses/GPL-2.0.html"
+    },
+    "name": "chntpw-140201",
+    "outputs": [
+      "out"
+    ],
+    "version": "140201",
+    "homepage": "http://pogostick.net/~pnh/ntpasswd/"
+  },
+  "strawberry": {
+    "attribute_name": "strawberry",
+    "default_output": "out",
+    "description": "Music player and music collection organizer",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 only",
+      "redistributable": true,
+      "shortName": "gpl3Only",
+      "spdxId": "GPL-3.0-only",
+      "url": "https://spdx.org/licenses/GPL-3.0-only.html"
+    },
+    "name": "strawberry-1.0.21",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.0.21",
+    "homepage": "https://www.strawberrymusicplayer.org/"
+  },
+  "libkate": {
+    "attribute_name": "libkate",
+    "default_output": "out",
+    "description": "A library for encoding and decoding Kate streams",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "BSD 3-clause \"New\" or \"Revised\" License",
+      "redistributable": true,
+      "shortName": "bsd3",
+      "spdxId": "BSD-3-Clause",
+      "url": "https://spdx.org/licenses/BSD-3-Clause.html"
+    },
+    "name": "libkate-0.4.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.4.1",
+    "homepage": "https://code.google.com/archive/p/libkate/"
+  },
+  "h": {
+    "attribute_name": "h",
+    "default_output": "out",
+    "description": "faster shell navigation of projects",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "h-1.0.4",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.0.4",
+    "homepage": "https://github.com/zimbatm/h"
+  },
+  "awsweeper": {
+    "attribute_name": "awsweeper",
+    "default_output": "out",
+    "description": "A tool to clean out your AWS account",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Mozilla Public License 2.0",
+      "redistributable": true,
+      "shortName": "mpl20",
+      "spdxId": "MPL-2.0",
+      "url": "https://spdx.org/licenses/MPL-2.0.html"
+    },
+    "name": "awsweeper-0.12.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.12.0",
+    "homepage": "https://github.com/jckuester/awsweeper"
+  },
+  "fortran-language-server": {
+    "attribute_name": "fortran-language-server",
+    "default_output": "out",
+    "description": "FORTRAN Language Server for the Language Server Protocol",
+    "camelCase": null,
+    "license": [
+      {
+        "free": true,
+        "fullName": "MIT License",
+        "redistributable": true,
+        "shortName": "mit",
+        "spdxId": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      }
+    ],
+    "name": "fortran-language-server-1.12.0",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "1.12.0",
+    "homepage": "https://pypi.org/project/fortran-language-server/"
+  },
+  "elixir-ls": {
+    "attribute_name": "elixir-ls",
+    "default_output": "out",
+    "description": "A frontend-independent IDE \"smartness\" server for Elixir.\nImplements the \"Language Server Protocol\" standard and provides debugger support via the \"Debug Adapter Protocol\"\n",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "elixir-ls-0.17.10",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.17.10",
+    "homepage": "https://github.com/elixir-lsp/elixir-ls"
+  },
+  "lld_9": {
+    "attribute_name": "lld_9",
+    "default_output": "out",
+    "description": "The LLVM linker (unwrapped)",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "University of Illinois/NCSA Open Source License",
+      "redistributable": true,
+      "shortName": "ncsa",
+      "spdxId": "NCSA",
+      "url": "https://spdx.org/licenses/NCSA.html"
+    },
+    "name": "lld-9.0.1",
+    "outputs": [
+      "out",
+      "lib",
+      "dev"
+    ],
+    "version": "9.0.1",
+    "homepage": "https://lld.llvm.org/"
+  },
+  "osmo-sgsn": {
+    "attribute_name": "osmo-sgsn",
+    "default_output": "out",
+    "description": "Osmocom implementation of the 3GPP Serving GPRS Support Node (SGSN)",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU Affero General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "agpl3Plus",
+      "spdxId": "AGPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/AGPL-3.0-or-later.html"
+    },
+    "name": "osmo-ggsn-1.11.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.11.0",
+    "homepage": "https://osmocom.org/projects/osmosgsn"
+  },
+  "rstudioWrapper": {
+    "attribute_name": "rstudioWrapper",
+    "default_output": "out",
+    "description": null,
+    "camelCase": null,
+    "license": null,
+    "name": "RStudio-2023.09.0+463-wrapper",
+    "outputs": [
+      "out"
+    ],
+    "version": "",
+    "homepage": null
+  },
+  "lash": {
+    "attribute_name": "lash",
+    "default_output": "out",
+    "description": "A Linux Audio Session Handler",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "lash-0.5.4",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.5.4",
+    "homepage": "https://www.nongnu.org/lash"
+  },
+  "node2nix": {
+    "attribute_name": "node2nix",
+    "default_output": "out",
+    "description": "Generate Nix expressions to build NPM packages",
+    "camelCase": null,
+    "license": "MIT",
+    "name": "node2nix-1.11.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.11.0",
+    "homepage": "https://github.com/svanderburg/node2nix"
+  },
+  "wayst": {
+    "attribute_name": "wayst",
+    "default_output": "out",
+    "description": "A simple terminal emulator",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "wayst-unstable-2023-07-16",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2023-07-16",
+    "homepage": "https://github.com/91861/wayst"
+  },
+  "hidden-bar": {
+    "attribute_name": "hidden-bar",
+    "default_output": "out",
+    "description": "An ultra-light MacOS utility that helps hide menu bar icons",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "hidden-bar-1.9",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.9",
+    "homepage": "https://github.com/dwarvesf/hidden"
+  },
+  "meme": {
+    "attribute_name": "meme",
+    "default_output": "out",
+    "description": "A command line utility for creating image macro style memes",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "meme-image-generator-1.0.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.0.2",
+    "homepage": "https://github.com/nomad-software/meme"
+  },
+  "mujoco": {
+    "attribute_name": "mujoco",
+    "default_output": "out",
+    "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "mujoco-2.3.7",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.3.7",
+    "homepage": "https://mujoco.org/"
+  },
+  "blink": {
+    "attribute_name": "blink",
+    "default_output": "out",
+    "description": "Tiniest x86-64-linux emulator",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "ISC License",
+      "redistributable": true,
+      "shortName": "isc",
+      "spdxId": "ISC",
+      "url": "https://spdx.org/licenses/ISC.html"
+    },
+    "name": "blink-1.0.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.0.0",
+    "homepage": "https://github.com/jart/blink"
+  },
+  "fishnet": {
+    "attribute_name": "fishnet",
+    "default_output": "out",
+    "description": "Distributed Stockfish analysis for lichess.org",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "fishnet-2.7.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.7.1",
+    "homepage": "https://github.com/lichess-org/fishnet"
+  },
+  "libpar2": {
+    "attribute_name": "libpar2",
+    "default_output": "out",
+    "description": "A library for using Parchives (parity archive volume sets)",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "libpar2-0.4",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.4",
+    "homepage": "https://parchive.sourceforge.net/"
+  },
+  "gerrit-queue": {
+    "attribute_name": "gerrit-queue",
+    "default_output": "out",
+    "description": "Merge bot for Gerrit",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "gerrit-queue-0.0.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.0.1",
+    "homepage": "https://github.com/flokli/gerrit-queue"
+  },
+  "numdiff": {
+    "attribute_name": "numdiff",
+    "default_output": "out",
+    "description": "A little program that can be used to compare putatively similar files\nline by line and field by field, ignoring small numeric differences\nor/and different numeric formats\n",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "numdiff-5.9.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "5.9.0",
+    "homepage": "https://www.nongnu.org/numdiff/"
+  },
+  "librsync": {
+    "attribute_name": "librsync",
+    "default_output": "out",
+    "description": "Implementation of the rsync remote-delta algorithm",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU Library General Public License v2 or later",
+      "redistributable": true,
+      "shortName": "lgpl2Plus",
+      "spdxId": "LGPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/LGPL-2.0-or-later.html"
+    },
+    "name": "librsync-2.3.4",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.3.4",
+    "homepage": "https://librsync.sourceforge.net/"
+  },
+  "gosu": {
+    "attribute_name": "gosu",
+    "default_output": "out",
+    "description": "Tool that avoids TTY and signal-forwarding behavior of sudo and su",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "gosu-1.17",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.17",
+    "homepage": "https://github.com/tianon/gosu"
+  },
+  "harfbuzzFull": {
+    "attribute_name": "harfbuzzFull",
+    "default_output": "out",
+    "description": "An OpenType text shaping engine",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "harfbuzz-icu-7.3.0",
+    "outputs": [
+      "out",
+      "dev",
+      "devdoc"
+    ],
+    "version": "7.3.0",
+    "homepage": "https://harfbuzz.github.io/"
+  },
+  "kerf": {
+    "attribute_name": "kerf",
+    "default_output": "out",
+    "description": "Columnar tick database and time-series language",
+    "camelCase": null,
+    "license": [
+      {
+        "free": true,
+        "fullName": "BSD 2-clause \"Simplified\" License",
+        "redistributable": true,
+        "shortName": "bsd2",
+        "spdxId": "BSD-2-Clause",
+        "url": "https://spdx.org/licenses/BSD-2-Clause.html"
+      }
+    ],
+    "name": "kerf-unstable-2022-08-05",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2022-08-05",
+    "homepage": "https://github.com/kevinlawler/kerf1"
+  },
+  "nodejs-slim_latest": {
+    "attribute_name": "nodejs-slim_latest",
+    "default_output": "out",
+    "description": "Event-driven I/O framework for the V8 JavaScript engine",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "nodejs-slim-21.7.2",
+    "outputs": [
+      "out",
+      "libv8"
+    ],
+    "version": "21.7.2",
+    "homepage": "https://nodejs.org/"
+  },
+  "tesh": {
+    "attribute_name": "tesh",
+    "default_output": "out",
+    "description": null,
+    "camelCase": null,
+    "license": null,
+    "name": "python3.11-tesh-0.3.2",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "0.3.2",
+    "homepage": null
+  },
+  "nethogs": {
+    "attribute_name": "nethogs",
+    "default_output": "out",
+    "description": "A small 'net top' tool, grouping bandwidth by process",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "nethogs-0.8.7",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.8.7",
+    "homepage": "https://github.com/raboof/nethogs#readme"
+  },
+  "zammad": {
+    "attribute_name": "zammad",
+    "default_output": "out",
+    "description": "Zammad, a web-based, open source user support/ticketing solution.",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU Affero General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "agpl3Plus",
+      "spdxId": "AGPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/AGPL-3.0-or-later.html"
+    },
+    "name": "zammad-5.4.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "5.4.1",
+    "homepage": "https://zammad.org/"
+  },
+  "rectangle": {
+    "attribute_name": "rectangle",
+    "default_output": "out",
+    "description": "Move and resize windows in macOS using keyboard shortcuts or snap areas",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "rectangle-0.77",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.77",
+    "homepage": "https://rectangleapp.com/"
+  },
+  "librest": {
+    "attribute_name": "librest",
+    "default_output": "out",
+    "description": "Helper library for RESTful services",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU Lesser General Public License v2.1 only",
+      "redistributable": true,
+      "shortName": "lgpl21Only",
+      "spdxId": "LGPL-2.1-only",
+      "url": "https://spdx.org/licenses/LGPL-2.1-only.html"
+    },
+    "name": "rest-0.8.1",
+    "outputs": [
+      "out",
+      "dev",
+      "devdoc"
+    ],
+    "version": "0.8.1",
+    "homepage": "https://wiki.gnome.org/Projects/Librest"
+  },
+  "ghr": {
+    "attribute_name": "ghr",
+    "default_output": "out",
+    "description": "Upload multiple artifacts to GitHub Release in parallel",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "ghr-0.16.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.16.2",
+    "homepage": "https://github.com/tcnksm/ghr"
+  },
+  "cargo-msrv": {
+    "attribute_name": "cargo-msrv",
+    "default_output": "out",
+    "description": "Cargo subcommand \"msrv\": assists with finding your minimum supported Rust version (MSRV)",
+    "camelCase": null,
+    "license": [
+      {
+        "free": true,
+        "fullName": "Apache License 2.0",
+        "redistributable": true,
+        "shortName": "asl20",
+        "spdxId": "Apache-2.0",
+        "url": "https://spdx.org/licenses/Apache-2.0.html"
+      },
+      {
+        "free": true,
+        "fullName": "MIT License",
+        "redistributable": true,
+        "shortName": "mit",
+        "spdxId": "MIT",
+        "url": "https://spdx.org/licenses/MIT.html"
+      }
+    ],
+    "name": "cargo-msrv-0.15.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.15.1",
+    "homepage": "https://github.com/foresterre/cargo-msrv"
+  },
+  "holo-build": {
+    "attribute_name": "holo-build",
+    "default_output": "out",
+    "description": "Cross-distribution system package compiler",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "holo-build-1.6.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.6.1",
+    "homepage": "https://holocm.org/"
+  },
+  "fcitx5-nord": {
+    "attribute_name": "fcitx5-nord",
+    "default_output": "out",
+    "description": "Fcitx5 theme based on Nord color",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "fcitx5-nord-unstable-2021-07-27",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2021-07-27",
+    "homepage": "https://github.com/tonyfettes/fcitx5-nord"
+  },
+  "airscan": {
+    "attribute_name": "airscan",
+    "default_output": "out",
+    "description": "Package to scan paper documents using the Apple AirScan (eSCL) protocol",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "airscan-0.3",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.3",
+    "homepage": "https://github.com/stapelberg/airscan"
+  },
+  "lightdm-mobile-greeter": {
+    "attribute_name": "lightdm-mobile-greeter",
+    "default_output": "out",
+    "description": "A simple log in screen for use on touch screens",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "lightdm-mobile-greeter-2022-10-30",
+    "outputs": [
+      "out"
+    ],
+    "version": "2022-10-30",
+    "homepage": "https://git.raatty.club/raatty/lightdm-mobile-greeter"
+  },
+  "trx": {
+    "attribute_name": "trx",
+    "default_output": "out",
+    "description": "A simple toolset for broadcasting live audio using RTP/UDP and Opus",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0",
+      "redistributable": true,
+      "shortName": "gpl2",
+      "spdxId": "GPL-2.0",
+      "url": "https://spdx.org/licenses/GPL-2.0.html"
+    },
+    "name": "trx-0.5",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.5",
+    "homepage": "http://www.pogo.org.uk/~mark/trx/"
+  },
+  "operator-sdk": {
+    "attribute_name": "operator-sdk",
+    "default_output": "out",
+    "description": "SDK for building Kubernetes applications. Provides high level APIs, useful abstractions, and project scaffolding",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "operator-sdk-1.31.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.31.0",
+    "homepage": "https://github.com/operator-framework/operator-sdk"
+  },
+  "dogdns": {
+    "attribute_name": "dogdns",
+    "default_output": "out",
+    "description": "Command-line DNS client",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "European Union Public License 1.2",
+      "redistributable": true,
+      "shortName": "eupl12",
+      "spdxId": "EUPL-1.2",
+      "url": "https://spdx.org/licenses/EUPL-1.2.html"
+    },
+    "name": "dogdns-unstable-2021-10-07",
+    "outputs": [
+      "out",
+      "man"
+    ],
+    "version": "unstable-2021-10-07",
+    "homepage": "https://dns.lookup.dog/"
+  },
+  "nv-codec-headers": {
+    "attribute_name": "nv-codec-headers",
+    "default_output": "out",
+    "description": "FFmpeg version of headers for NVENC",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "nv-codec-headers-9.1.23.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "9.1.23.1",
+    "homepage": "https://ffmpeg.org/"
+  },
+  "regionset": {
+    "attribute_name": "regionset",
+    "default_output": "out",
+    "description": "Tool for changing the region code setting of DVD players",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "regionset-0.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.2",
+    "homepage": "http://linvdr.org/projects/regionset/"
+  },
+  "autodock-vina": {
+    "attribute_name": "autodock-vina",
+    "default_output": "out",
+    "description": "One of the fastest and most widely used open-source docking engines",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "autodock-vina-1.2.5",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.2.5",
+    "homepage": "https://vina.scripps.edu/"
+  },
+  "iproute2": {
+    "attribute_name": "iproute2",
+    "default_output": "out",
+    "description": "A collection of utilities for controlling TCP/IP networking and traffic control in Linux",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0",
+      "redistributable": true,
+      "shortName": "gpl2",
+      "spdxId": "GPL-2.0",
+      "url": "https://spdx.org/licenses/GPL-2.0.html"
+    },
+    "name": "iproute2-6.5.0",
+    "outputs": [
+      "out",
+      "dev"
+    ],
+    "version": "6.5.0",
+    "homepage": "https://wiki.linuxfoundation.org/networking/iproute2"
+  },
+  "nextdns": {
+    "attribute_name": "nextdns",
+    "default_output": "out",
+    "description": "NextDNS DNS/53 to DoH Proxy",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "nextdns-1.41.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.41.0",
+    "homepage": "https://nextdns.io/"
+  },
+  "dancing-script": {
+    "attribute_name": "dancing-script",
+    "default_output": "out",
+    "description": "Dancing Script",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "SIL Open Font License 1.1",
+      "redistributable": true,
+      "shortName": "ofl",
+      "spdxId": "OFL-1.1",
+      "url": "https://spdx.org/licenses/OFL-1.1.html"
+    },
+    "name": "dancing-script-2.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.0",
+    "homepage": "https://github.com/impallari/DancingScript"
+  },
+  "nvtop-msm": {
+    "attribute_name": "nvtop-msm",
+    "default_output": "out",
+    "description": "A (h)top like task monitor for AMD, Adreno, Intel and NVIDIA GPUs",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 only",
+      "redistributable": true,
+      "shortName": "gpl3Only",
+      "spdxId": "GPL-3.0-only",
+      "url": "https://spdx.org/licenses/GPL-3.0-only.html"
+    },
+    "name": "nvtop-msm-3.0.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "3.0.2",
+    "homepage": "https://github.com/Syllo/nvtop"
+  },
+  "rshell": {
+    "attribute_name": "rshell",
+    "default_output": "out",
+    "description": "Remote Shell for MicroPython",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "rshell-0.0.31",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "0.0.31",
+    "homepage": "https://github.com/dhylands/rshell"
+  },
+  "serf": {
+    "attribute_name": "serf",
+    "default_output": "out",
+    "description": "HTTP client library based on APR",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "serf-1.3.10",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.3.10",
+    "homepage": "https://serf.apache.org/"
+  },
+  "yelp-tools": {
+    "attribute_name": "yelp-tools",
+    "default_output": "out",
+    "description": "Small programs that help you create, edit, manage, and publish your Mallard or DocBook documentation",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "yelp-tools-42.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "42.1",
+    "homepage": "https://wiki.gnome.org/Apps/Yelp/Tools"
+  },
+  "nats-streaming-server": {
+    "attribute_name": "nats-streaming-server",
+    "default_output": "out",
+    "description": "NATS Streaming System Server",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Apache License 2.0",
+      "redistributable": true,
+      "shortName": "asl20",
+      "spdxId": "Apache-2.0",
+      "url": "https://spdx.org/licenses/Apache-2.0.html"
+    },
+    "name": "nats-streaming-server-0.25.6",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.25.6",
+    "homepage": "https://nats.io/"
+  },
+  "piglit": {
+    "attribute_name": "piglit",
+    "default_output": "out",
+    "description": "An OpenGL test suite, and test-suite runner",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Unspecified free software license",
+      "redistributable": true,
+      "shortName": "free",
+      "spdxId": null,
+      "url": null
+    },
+    "name": "piglit-unstable-2020-10-23",
+    "outputs": [
+      "out"
+    ],
+    "version": "unstable-2020-10-23",
+    "homepage": "https://gitlab.freedesktop.org/mesa/piglit"
+  },
+  "imv": {
+    "attribute_name": "imv",
+    "default_output": "out",
+    "description": "A command line image viewer for tiling window managers",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "imv-4.4.0",
+    "outputs": [
+      "out",
+      "man"
+    ],
+    "version": "4.4.0",
+    "homepage": "https://sr.ht/~exec64/imv/"
+  },
+  "satallax": {
+    "attribute_name": "satallax",
+    "default_output": "out",
+    "description": "Automated theorem prover for higher-order logic",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "satallax-2.7",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.7",
+    "homepage": "http://www.ps.uni-saarland.de/~cebrown/satallax/index.php"
+  },
+  "online-judge-template-generator": {
+    "attribute_name": "online-judge-template-generator",
+    "default_output": "out",
+    "description": "Analyze problems of competitive programming and automatically generate boilerplate",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "MIT License",
+      "redistributable": true,
+      "shortName": "mit",
+      "spdxId": "MIT",
+      "url": "https://spdx.org/licenses/MIT.html"
+    },
+    "name": "online-judge-template-generator-4.8.1",
+    "outputs": [
+      "out",
+      "dist"
+    ],
+    "version": "4.8.1",
+    "homepage": "https://github.com/online-judge-tools/template-generator"
+  },
+  "ipmiview": {
+    "attribute_name": "ipmiview",
+    "default_output": "out",
+    "description": null,
+    "camelCase": null,
+    "license": {
+      "free": false,
+      "fullName": "Unfree",
+      "redistributable": false,
+      "shortName": "unfree",
+      "spdxId": null,
+      "url": null
+    },
+    "name": "IPMIView-2.21.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.21.0",
+    "homepage": null
+  },
+  "sqlite-analyzer": {
+    "attribute_name": "sqlite-analyzer",
+    "default_output": "out",
+    "description": "A tool that shows statistics about SQLite databases",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "Public Domain",
+      "redistributable": true,
+      "shortName": "publicDomain",
+      "spdxId": null,
+      "url": null
+    },
+    "name": "sqlite-analyzer-3.43.2",
+    "outputs": [
+      "out"
+    ],
+    "version": "3.43.2",
+    "homepage": "https://www.sqlite.org/sqlanalyze.html"
+  },
+  "unoconv": {
+    "attribute_name": "unoconv",
+    "default_output": "out",
+    "description": "Convert between any document format supported by LibreOffice/OpenOffice",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0",
+      "redistributable": true,
+      "shortName": "gpl2",
+      "spdxId": "GPL-2.0",
+      "url": "https://spdx.org/licenses/GPL-2.0.html"
+    },
+    "name": "unoconv-0.9.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.9.0",
+    "homepage": "http://dag.wieers.com/home-made/unoconv/"
+  },
+  "finger_bsd": {
+    "attribute_name": "finger_bsd",
+    "default_output": "out",
+    "description": "User information lookup program",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "BSD 4-clause \"Original\" or \"Old\" License",
+      "redistributable": true,
+      "shortName": "bsdOriginal",
+      "spdxId": "BSD-4-Clause",
+      "url": "https://spdx.org/licenses/BSD-4-Clause.html"
+    },
+    "name": "bsd-finger-0.17",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.17",
+    "homepage": null
+  },
+  "openbabel2": {
+    "attribute_name": "openbabel2",
+    "default_output": "out",
+    "description": "A toolbox designed to speak the many languages of chemical data",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v2.0 or later",
+      "redistributable": true,
+      "shortName": "gpl2Plus",
+      "spdxId": "GPL-2.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-2.0-or-later.html"
+    },
+    "name": "openbabel-2.4.1",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.4.1",
+    "homepage": "http://openbabel.org/"
+  },
+  "yarn": {
+    "attribute_name": "yarn",
+    "default_output": "out",
+    "description": "Fast, reliable, and secure dependency management for javascript",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "BSD 2-clause \"Simplified\" License",
+      "redistributable": true,
+      "shortName": "bsd2",
+      "spdxId": "BSD-2-Clause",
+      "url": "https://spdx.org/licenses/BSD-2-Clause.html"
+    },
+    "name": "yarn-1.22.19",
+    "outputs": [
+      "out"
+    ],
+    "version": "1.22.19",
+    "homepage": "https://classic.yarnpkg.com/"
+  },
+  "disarchive": {
+    "attribute_name": "disarchive",
+    "default_output": "out",
+    "description": "Disassemble software into data and metadata",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0 or later",
+      "redistributable": true,
+      "shortName": "gpl3Plus",
+      "spdxId": "GPL-3.0-or-later",
+      "url": "https://spdx.org/licenses/GPL-3.0-or-later.html"
+    },
+    "name": "disarchive-0.5.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "0.5.0",
+    "homepage": "https://ngyro.com/software/disarchive.html"
+  },
+  "gtklock": {
+    "attribute_name": "gtklock",
+    "default_output": "out",
+    "description": "GTK-based lockscreen for Wayland",
+    "camelCase": null,
+    "license": {
+      "free": true,
+      "fullName": "GNU General Public License v3.0",
+      "redistributable": true,
+      "shortName": "gpl3",
+      "spdxId": "GPL-3.0",
+      "url": "https://spdx.org/licenses/GPL-3.0.html"
+    },
+    "name": "gtklock-2.1.0",
+    "outputs": [
+      "out"
+    ],
+    "version": "2.1.0",
+    "homepage": "https://github.com/jovanlanik/gtklock"
+  }
+}

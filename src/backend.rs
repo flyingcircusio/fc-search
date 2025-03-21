@@ -83,9 +83,36 @@ impl AppState {
     }
 }
 
-pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> {
+pub async fn run_test(port: u16, state_dir: &Path) -> anyhow::Result<()> {
+    let state = AppState::in_dir(
+        state_dir,
+        vec![Flake {
+            owner: "flyingcircusio".to_string(),
+            name: "fc-nixos".to_string(),
+            branch: "latest".to_string(),
+            rev: fc_search::FlakeRev::FallbackToCached,
+            last_modified: None,
+        }],
+    )?;
+
+    let router = search_router().with_state(state.clone());
+
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    info!(
+        "router initialized, now listening on http://{}",
+        listener.local_addr().unwrap()
+    );
+
+    axum::serve(listener, router.into_make_service())
+        .await
+        .context("error while starting server")
+        .map(|_| ())
+}
+
+pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
     let state = {
-        let default_branches = || {
+        let branches = get_fcio_flake_uris().await.unwrap_or_else(|_| {
             vec![Flake {
                 owner: "flyingcircusio".to_string(),
                 name: "fc-nixos".to_string(),
@@ -93,33 +120,14 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
                 rev: fc_search::FlakeRev::FallbackToCached,
                 last_modified: None,
             }]
-        };
+        });
 
-        let branches = if test {
-            default_branches()
-        } else {
-            get_fcio_flake_uris()
-                .await
-                .unwrap_or_else(|_| default_branches())
-        };
-
-        // in release mode try to load the cached index from disk
         AppState::in_dir(state_dir, branches)?
     };
 
+    let router = search_router().with_state(state.clone());
+
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
-
-    let router = Router::new()
-        .route("/", get(index_handler))
-        .route(
-            "/search",
-            get(|| async { Redirect::permanent("/search/options").into_response() }),
-        )
-        .route("/search/options", get(search_options_handler))
-        .route("/search/packages", get(search_packages_handler))
-        .route("/assets/*file", get(static_handler))
-        .with_state(state.clone());
-
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!(
         "router initialized, now listening on http://{}",
@@ -127,7 +135,6 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
     );
 
     let updater_channels = state.channels.clone();
-
     // run update loop in the background
     let updater_handle = tokio::spawn(async move {
         let freq = Duration::from_hours(5);
@@ -171,6 +178,18 @@ pub async fn run(port: u16, state_dir: &Path, test: bool) -> anyhow::Result<()> 
             updater_handle.abort();
             e
         })
+}
+
+fn search_router() -> Router<AppState> {
+    Router::new()
+        .route("/", get(index_handler))
+        .route(
+            "/search",
+            get(|| async { Redirect::permanent("/search/options").into_response() }),
+        )
+        .route("/search/options", get(search_options_handler))
+        .route("/search/packages", get(search_packages_handler))
+        .route("/assets/{*file}", get(static_handler))
 }
 
 async fn index_handler() -> impl IntoResponse {

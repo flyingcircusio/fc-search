@@ -13,7 +13,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use url::Url;
 
 use self::nix::Expression;
@@ -302,6 +302,6 @@ pub trait LogError<T> {
 
 impl<T, E: Display> LogError<T> for Result<T, E> {
     fn log_to_option(self, context: &str) -> Option<T> {
-        self.map_err(|e| error!("{}: {e}", context)).ok()
+        self.map_err(|e| debug!("{}: {e}", context)).ok()
     }
 }

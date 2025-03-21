@@ -1,7 +1,8 @@
 /target
 /.pre-commit-config.yaml
-*.json
-assets/
 
-# to test the state directory locally
-test-state-dir/
+assets/tailwind.css
+
+state-dir/latest/tantivy/
+state-dir/latest/tantivy_packages/
+!state-dir/latest/*.json
