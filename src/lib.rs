@@ -13,7 +13,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 use url::Url;
 
 use self::nix::Expression;
@@ -222,7 +222,9 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
                 branches.push(branch.to_string());
             }
             _ => {
-                warn!("jobset {:?} has no input fc", jobset);
+                if let Some(nixpkgs) = jobset.inputs.get("nixpkgs") {
+                    warn!("jobset with nixpkgs {:?} has no input fc", nixpkgs.value);
+                }
             }
         }
     }

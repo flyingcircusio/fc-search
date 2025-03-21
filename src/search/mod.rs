@@ -84,7 +84,7 @@ impl ChannelSearcher {
         let branchname = flake.branch.clone();
         let branch_path = state_dir.join(branchname.clone());
 
-        debug!("starting searcher for branch {}", &branchname);
+        info!("starting searcher for branch {}", &branchname);
 
         let flake_info_path = branch_path.join("flake_info.json");
         if matches!(flake.rev, FlakeRev::FallbackToCached) && flake_info_path.exists() {
