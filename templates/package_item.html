@@ -1,25 +1,31 @@
 {% for item in results %}
 <li class="my-4 p-4 border border-1 rounded-md">
 
-    <p class="font-bold py-1 text-fc-green">{{ item.attribute_name }}</p>
+    <p class="font-bold py-1 text-fc-green text-lg">{{ item.attribute_name }}</p>
 
-    <p>{{ item.description.clone().unwrap_or_default() }}</p>
+    {% if item.description.is_some() %}
+    <p class="py-2">{{ item.description.clone().unwrap_or_default() }}</p>
+    {% endif %}
 
-    <div class="py-2 grid grid-cols-7">
-        <p>Version</p>
-        <code class="col-span-6">
+    <div class="py-2 grid grid-cols-7 space-y-2">
+        <p class="self-center">Version</p>
+        <code class="col-span-6 bg-gray-100 p-2 rounded">
             {{ item.version.clone().unwrap_or_default() }}
         </code>
 
-        <p>License</p>
-        <code class="col-span-6">
+        {% if item.license.as_html().0 != "" %}
+        <p class="self-center">License</p>
+        <code class="col-span-6 bg-gray-100 p-2 rounded">
             {{ item.license.as_html()|safe }}
         </code>
+        {% endif %}
 
-        <p>Homepage</p>
-        <code class="col-span-6">
+        {% if item.homepage.as_html().0 != "" %}
+        <p class="self-center">Homepage</p>
+        <code class="col-span-6 bg-gray-100 p-2 rounded">
             {{ item.homepage.as_html()|safe }}
         </code>
+        {% endif %}
     </div>
 </li>
 {% endfor %}

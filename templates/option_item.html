@@ -12,22 +12,22 @@
     {% endif %}
 
     <div class="pb-2 pt-4 grid grid-cols-7 space-y-2">
-        <p>Type</p>
+        <p class="self-center">Type</p>
         <code class="col-span-6 whitespace-pre bg-gray-100 p-2 rounded">{{item.option_type}}</code>
 
         {% if item.default.0 != "" %}
-        <p>Default</p>
+        <p class="self-center">Default</p>
         <code class="col-span-6 whitespace-pre bg-gray-100 p-2 rounded">{{ item.default|safe }}</code>
         {% endif %}
 
         {% if item.example.0 != "" %}
-        <p>Example</p>
+        <p class="self-center">Example</p>
         <code class="col-span-6 whitespace-pre bg-gray-100 p-2 rounded">{{ item.example|safe }}</code>
         {% endif %}
 
-        <p>Declarations</p>
+        <p class="self-center">Declarations</p>
         <div>
-            <ul class="w-full rounded">
+            <ul class="w-full rounded py-1">
                 {% for s in item.declarations %}
                     <li class="text-sm whitespace-nowrap w-full">{{ s|safe }}</li>
                 {% endfor %}

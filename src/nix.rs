@@ -98,7 +98,7 @@ pub enum Plurality<T> {
 impl<T: NixHtml + Eq + std::hash::Hash> NixHtml for Plurality<T> {
     fn as_html(&self) -> crate::Html {
         match self {
-            Self::None => crate::Html("<p></p>".to_string()),
+            Self::None => crate::Html(String::new()),
             Self::Single(l) => l.as_html(),
             Self::Multiple(m) => crate::Html(m.iter().unique().map(|f| f.as_html().0).join("")),
             Self::Fallback(m) => crate::Html(format!("<code>{m}</code>")),
