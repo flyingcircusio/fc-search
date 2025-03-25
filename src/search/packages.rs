@@ -1,25 +1,20 @@
 use std::collections::HashMap;
 
-use tantivy::collector::{Collector, TopDocs};
 use tantivy::query::{
     BooleanQuery, BoostQuery, FuzzyTermQuery, Occur, Query, RegexQuery, TermQuery,
 };
 use tantivy::schema::{Schema, TextFieldIndexing, TextOptions, TEXT};
 use tantivy::{doc, DocId, Score, SegmentReader, TantivyDocument, Term};
 
-use super::{open_or_create_index, FCFruit, GenericSearcher, Searcher, SearcherInner};
+use super::{GenericSearcher, Searcher};
 use crate::nix::NixPackage;
 
 impl Searcher for GenericSearcher<NixPackage> {
     type Item = NixPackage;
 
     fn parse_query(&self, query_string: &str) -> Box<dyn Query> {
-        let Some(ref inner) = self.inner else {
-            unreachable!("searcher not initialized, cannot parse");
-        };
-
-        let attribute_name = inner.schema.get_field("attribute_name").unwrap();
-        let description = inner.schema.get_field("description").unwrap();
+        let attribute_name = self.inner.schema.get_field("attribute_name").unwrap();
+        let description = self.inner.schema.get_field("description").unwrap();
         let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
         for (i, word) in query_string.split(' ').enumerate() {
@@ -93,7 +88,7 @@ impl Searcher for GenericSearcher<NixPackage> {
         Box::new(BooleanQuery::new(subqueries))
     }
 
-    fn create_index(&mut self) -> anyhow::Result<()> {
+    fn schema() -> (tantivy::schema::Field, tantivy::schema::Schema) {
         let mut schema_builder = Schema::builder();
 
         let raw_stored = TextOptions::default()
@@ -108,37 +103,15 @@ impl Searcher for GenericSearcher<NixPackage> {
         schema_builder.add_text_field("description", TEXT);
         let schema = schema_builder.build();
 
-        let index = open_or_create_index(&self.index_path, &schema)?;
-
-        let reader = index
-            .reader_builder()
-            .reload_policy(tantivy::ReloadPolicy::OnCommitWithDelay)
-            .try_into()
-            .unwrap();
-
-        self.map = HashMap::new();
-        self.inner = Some(SearcherInner {
-            schema,
-            index,
-            reader,
-            reference_field: attribute_name,
-        });
-
-        Ok(())
+        (attribute_name, schema)
     }
 
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()> {
-        let Some(ref inner) = self.inner else {
-            anyhow::bail!("can not update options before index creation");
-        };
-
-        let index = &inner.index;
-        let schema = &inner.schema;
+        let index = &self.inner.index;
+        let schema = &self.inner.schema;
         let mut index_writer = index.writer(50_000_000)?;
 
-        let attribute_name = schema
-            .get_field("attribute_name")
-            .expect("the field attribute_name should exist");
+        let attribute_name = self.inner.reference_field;
         let description = schema
             .get_field("description")
             .expect("the field description should exist");
@@ -159,23 +132,22 @@ impl Searcher for GenericSearcher<NixPackage> {
         index_writer.commit()?;
 
         self.map = entries;
+        self.inner.reader.reload().unwrap();
         Ok(())
     }
 
-    fn collector(&self, n_items: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>> {
-        TopDocs::with_limit(n_items as usize + 1)
-            .and_offset((page.max(1) - 1) as usize * n_items as usize)
-            .tweak_score(move |segment_reader: &SegmentReader| {
-                let store_reader = segment_reader.get_store_reader(10).unwrap();
-                move |doc: DocId, score: Score| {
-                    let d: TantivyDocument = store_reader.get(doc).unwrap();
-                    let tantivy::schema::OwnedValue::Str(attribute_name) =
-                        d.field_values().first().unwrap().value()
-                    else {
-                        unreachable!("can't be anything else");
-                    };
-                    (score, 1. / attribute_name.len() as f32)
-                }
-            })
+    fn scorer() -> impl tantivy::collector::ScoreTweaker<(f32, f32)> + Send {
+        |segment_reader: &SegmentReader| {
+            let store_reader = segment_reader.get_store_reader(10).unwrap();
+            move |doc: DocId, score: Score| {
+                let d: TantivyDocument = store_reader.get(doc).unwrap();
+                let tantivy::schema::OwnedValue::Str(attribute_name) =
+                    d.field_values().first().unwrap().value()
+                else {
+                    unreachable!("can't be anything else");
+                };
+                (score, 1. / attribute_name.len() as f32)
+            }
+        }
     }
 }

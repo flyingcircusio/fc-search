@@ -18,7 +18,7 @@ use url::Url;
 
 use self::nix::Expression;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct NaiveNixosOption {
     pub name: String,
     pub declarations: Vec<Html>,

@@ -2,16 +2,15 @@ use anyhow::Context;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tantivy::collector::Collector;
+use tantivy::collector::{ScoreTweaker, TopDocs};
 use tantivy::query::Query;
 use tantivy::schema::{Field, OwnedValue, Schema};
-use tantivy::{DocAddress, Index, TantivyDocument};
+use tantivy::tokenizer::{TextAnalyzer, WhitespaceTokenizer};
+use tantivy::{Index, TantivyDocument};
 use tracing::{debug, error, info};
 
 use crate::nix::{self, NixPackage};
 use crate::{Flake, FlakeRev, LogError, NaiveNixosOption};
-
-type FCFruit = ((f32, f32), DocAddress);
 
 pub mod options;
 pub mod packages;
@@ -180,15 +179,56 @@ impl ChannelSearcher {
 pub struct GenericSearcher<Item> {
     pub index_path: PathBuf,
     pub map: HashMap<String, Item>,
-    inner: Option<SearcherInner>,
+    inner: SearcherInner,
 }
 
-impl<Item> GenericSearcher<Item> {
+impl<Item> GenericSearcher<Item>
+where
+    Self: Searcher,
+{
     pub fn new(index_path: &Path) -> Self {
+        let (attribute_name, schema) = Self::schema();
+        let index = {
+            std::fs::create_dir_all(index_path).unwrap();
+            let index_tmp = Index::open_or_create(
+                tantivy::directory::MmapDirectory::open(index_path).unwrap(),
+                schema.clone(),
+            );
+
+            match index_tmp {
+                Ok(i) => i,
+                Err(tantivy::TantivyError::SchemaError(e)) => {
+                    error!("schema error: {e}");
+                    debug!("deleting + recreating the old index");
+                    std::fs::remove_dir_all(index_path).unwrap();
+                    std::fs::create_dir_all(index_path).unwrap();
+                    Index::create_in_dir(index_path, schema.clone()).unwrap()
+                }
+                Err(e) => unreachable!("unexpected error: {e}"),
+            }
+        };
+
+        let options_tk = TextAnalyzer::builder(WhitespaceTokenizer::default()).build();
+        index.tokenizers().register("default_ws", options_tk);
+
+        let reader = index
+            .reader_builder()
+            .reload_policy(tantivy::ReloadPolicy::Manual)
+            .try_into()
+            .unwrap();
+
+        let map = HashMap::new();
+        let inner = SearcherInner {
+            schema,
+            index,
+            reader,
+            reference_field: attribute_name,
+        };
+
         Self {
             index_path: index_path.to_path_buf(),
-            map: HashMap::new(),
-            inner: None,
+            map,
+            inner,
         }
     }
 
@@ -200,18 +240,8 @@ impl<Item> GenericSearcher<Item> {
         Self: Searcher<Item = Item>,
     {
         let mut ret = Self::new(index_path);
-        ret.create_index()?;
         ret.update_entries(entries)?;
         Ok(ret)
-    }
-
-    pub fn load(&mut self, entries: HashMap<String, Item>) -> anyhow::Result<()>
-    where
-        Self: Searcher<Item = Item>,
-    {
-        self.create_index()?;
-        self.update_entries(entries)?;
-        Ok(())
     }
 
     pub fn search_entries(&self, query: &str, n_items: u8, page: u8) -> Vec<Item>
@@ -219,14 +249,14 @@ impl<Item> GenericSearcher<Item> {
         Item: std::fmt::Debug + Clone,
         Self: Searcher,
     {
-        let Some(ref inner) = self.inner else {
-            error!("searcher not initialized yet, please call create_index first");
-            return Vec::new();
-        };
-
-        let searcher = inner.reader.searcher();
+        let searcher = self.inner.reader.searcher();
         let query = self.parse_query(query);
-        let results = searcher.search(&query, &self.collector(n_items, page));
+
+        let collector = TopDocs::with_limit(n_items as usize + 1)
+            .and_offset((page.max(1) - 1) as usize * n_items as usize)
+            .tweak_score(Self::scorer());
+
+        let results = searcher.search(&query, &collector);
 
         results
             .ok()
@@ -236,7 +266,7 @@ impl<Item> GenericSearcher<Item> {
                     .map(|(_score, doc_address)| {
                         let retrieved: TantivyDocument = searcher.doc(doc_address).unwrap();
                         let OwnedValue::Str(name) = retrieved
-                            .get_first(inner.reference_field)
+                            .get_first(self.inner.reference_field)
                             .expect("result has a value for name")
                         else {
                             unreachable!("can't be non-str");
@@ -258,15 +288,10 @@ impl<Item> GenericSearcher<Item> {
 pub trait Searcher {
     type Item;
 
-    // TODO these depend on the underlying generic type...
-    // find a better way to implement this
     fn parse_query(&self, query_string: &str) -> Box<dyn Query>;
-    fn create_index(&mut self) -> anyhow::Result<()>;
     fn update_entries(&mut self, entries: HashMap<String, Self::Item>) -> anyhow::Result<()>;
-
-    // returns a maximum of (n_items + 1) results (with an offset of n_items * page) so that a next page button
-    // can be displayed if there would be > 0 items on the next page
-    fn collector(&self, n_items: u8, page: u8) -> impl Collector<Fruit = Vec<FCFruit>>;
+    fn schema() -> (tantivy::schema::Field, tantivy::schema::Schema);
+    fn scorer() -> impl ScoreTweaker<(f32, f32)> + Send;
 }
 
 pub fn update_file_cache(
@@ -305,25 +330,4 @@ pub fn update_file_cache(
 
     info!("successfully rebuilt options, packages + index");
     Ok((options, packages))
-}
-
-#[tracing::instrument(skip(schema))]
-fn open_or_create_index(index_path: &Path, schema: &Schema) -> anyhow::Result<Index> {
-    std::fs::create_dir_all(index_path)?;
-    let index_tmp = Index::open_or_create(
-        tantivy::directory::MmapDirectory::open(index_path).unwrap(),
-        schema.clone(),
-    );
-
-    match index_tmp {
-        Ok(i) => Ok(i),
-        Err(tantivy::TantivyError::SchemaError(e)) => {
-            error!("schema error: {e}");
-            debug!("deleting + recreating the old index");
-            std::fs::remove_dir_all(index_path)?;
-            std::fs::create_dir_all(index_path)?;
-            Ok(Index::create_in_dir(index_path, schema.clone())?)
-        }
-        Err(e) => unreachable!("unexpected error: {e}"),
-    }
 }
