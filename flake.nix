@@ -35,7 +35,7 @@
           (craneLib.fileset.commonCargoSources unfilteredRoot)
           (
             lib.fileset.fileFilter
-            (file: lib.any file.hasExt ["html"])
+            (file: lib.any file.hasExt ["html" "css" "js"])
             unfilteredRoot
           )
           (lib.fileset.maybeMissing ./nix)
