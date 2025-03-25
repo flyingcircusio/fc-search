@@ -217,9 +217,18 @@ async fn search_options_handler<'a>(
                 .sorted()
                 .find(|x| x.contains("prod"))
                 .cloned()
-                .context("no channels active")
-                .unwrap()
+                .unwrap_or_else(|| {
+                    state
+                        .channels
+                        .read()
+                        .unwrap()
+                        .keys()
+                        .next()
+                        .unwrap()
+                        .to_string()
+                })
         });
+
         state
             .channels
             .read()
