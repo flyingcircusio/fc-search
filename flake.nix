@@ -27,8 +27,23 @@
       rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
       craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
+      inherit (pkgs) lib;
+      unfilteredRoot = ./.;
+      src = lib.fileset.toSource {
+        root = unfilteredRoot;
+        fileset = lib.fileset.unions [
+          (craneLib.fileset.commonCargoSources unfilteredRoot)
+          (
+            lib.fileset.fileFilter
+            (file: lib.any file.hasExt ["html"])
+            unfilteredRoot
+          )
+          (lib.fileset.maybeMissing ./nix)
+        ];
+      };
+
       commonArgs = {
-        src = craneLib.cleanCargoSource ./.;
+        inherit src;
         strictDeps = true;
 
         nativeBuildInputs = [pkgs.tailwindcss pkgs.pkg-config];
