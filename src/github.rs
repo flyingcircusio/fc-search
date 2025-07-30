@@ -21,6 +21,7 @@ pub enum ApiBranchResponse {
     Ok {
         last_modified: Option<DateTime<FixedOffset>>,
         sha: String,
+        etag: Option<String>,
     },
 }
 
@@ -29,6 +30,7 @@ pub async fn fetch_latest_rev(
     name: &str,
     branch: &str,
     last_modified: Option<DateTime<FixedOffset>>,
+    etag: Option<String>,
 ) -> anyhow::Result<ApiBranchResponse> {
     let client = Client::builder()
         .build()
@@ -48,10 +50,18 @@ pub async fn fetch_latest_rev(
         "User-Agent",
         HeaderValue::from_str("fc-search").expect("valid string"),
     );
+
     if let Some(last_mod) = last_modified {
         headers.append(
             "If-Modified-Since",
             HeaderValue::from_str(&last_mod.to_rfc2822()).expect("rfc2822 should be valid string"),
+        );
+    }
+
+    if let Some(etag) = etag {
+        headers.append(
+            "if-none-match",
+            HeaderValue::from_str(&etag).expect("etag should be valid string"),
         );
     }
 
@@ -75,6 +85,8 @@ pub async fn fetch_latest_rev(
             .canonical_reason()
             .unwrap_or("(no canonical reason)")
     );
+
+    let etag = response.headers().get("etag");
 
     let last_modified = response.headers().get("last-modified").and_then(|x| {
         let content = x

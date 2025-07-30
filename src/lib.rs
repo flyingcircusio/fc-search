@@ -114,16 +114,23 @@ pub struct Flake {
     pub rev: FlakeRev,
     #[serde(default)]
     pub last_modified: Option<DateTime<FixedOffset>>,
+    #[serde(default)]
+    pub etag: Option<String>,
 }
 
 impl Flake {
     pub async fn new(owner: &str, name: &str, branch: &str) -> anyhow::Result<Self> {
-        match github::fetch_latest_rev(owner, name, branch, None).await {
-            Ok(github::ApiBranchResponse::Ok { last_modified, sha }) => Ok(Self {
+        match github::fetch_latest_rev(owner, name, branch, None, None).await {
+            Ok(github::ApiBranchResponse::Ok {
+                last_modified,
+                sha,
+                etag,
+            }) => Ok(Self {
                 owner: owner.to_string(),
                 name: name.to_string(),
                 branch: branch.to_string(),
                 last_modified,
+                etag,
                 rev: FlakeRev::Specific(sha),
             }),
             Err(e) => {
@@ -136,6 +143,7 @@ impl Flake {
                     name: name.to_string(),
                     branch: branch.to_string(),
                     last_modified: None,
+                    etag: None,
                     rev: FlakeRev::FallbackToCached,
                 })
             }
@@ -158,11 +166,21 @@ impl Flake {
     }
 
     pub async fn get_newest_from_github(&mut self) -> anyhow::Result<()> {
-        if let github::ApiBranchResponse::Ok { last_modified, sha } =
-            github::fetch_latest_rev(&self.owner, &self.name, &self.branch, self.last_modified)
-                .await?
+        if let github::ApiBranchResponse::Ok {
+            last_modified,
+            sha,
+            etag,
+        } = github::fetch_latest_rev(
+            &self.owner,
+            &self.name,
+            &self.branch,
+            self.last_modified,
+            self.etag.clone(),
+        )
+        .await?
         {
             self.last_modified = last_modified;
+            self.etag = etag;
             self.rev = FlakeRev::Specific(sha);
         };
 
