@@ -91,6 +91,8 @@ let
               networking.hostName = "options";
               networking.domain = "options";
               mailserver.fqdn = "test.fcio.net";
+
+              flyingcircus.active-roles = [ ];
             };
 
             imports = [
