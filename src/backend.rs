@@ -135,9 +135,13 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
     let updater_channels = state.channels.clone();
     // run update loop in the background
     let updater_handle = tokio::spawn(async move {
-        let freq = Duration::from_hours(1);
-        let mut interval = interval(freq);
+        let mut interval = interval(Duration::from_hours(1));
+        // the first tick completes immediately
+        interval.tick().await;
+
         loop {
+            interval.tick().await;
+
             if let Ok(upstream_flakes) = get_fcio_flake_uris().await {
                 let channels: HashMap<String, RwLock<ChannelSearcher>> = updater_channels
                     .read()
@@ -164,7 +168,6 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
                     }
                 }
             }
-            interval.tick().await;
         }
     });
 
