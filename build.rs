@@ -7,5 +7,7 @@ fn main() {
         .args(["-i", "main.css"])
         .arg("-m")
         .spawn()
+        .unwrap()
+        .wait()
         .unwrap();
 }

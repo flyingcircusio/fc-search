@@ -1,10 +1,8 @@
 #![feature(duration_constructors)]
 
-mod github;
 pub mod nix;
 pub mod search;
 
-use chrono::{DateTime, FixedOffset};
 use nix::NixosOption;
 
 use itertools::Itertools;
@@ -13,7 +11,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 use url::Url;
 
 use self::nix::Expression;
@@ -89,14 +87,27 @@ struct Project {
     jobsets: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct JobsetInput {
-    value: String,
+    #[serde(rename = "type")]
+    input_type: String,
+
+    #[serde(default)]
+    uri: Option<String>,
+
+    #[serde(default)]
+    revision: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-struct Jobset {
-    inputs: HashMap<String, JobsetInput>,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChannelEvalOverview {
+    evals: Vec<ChannelEval>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChannelEval {
+    jobsetevalinputs: HashMap<String, JobsetInput>,
+    id: i64,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -112,42 +123,20 @@ pub struct Flake {
     pub name: String,
     pub branch: String,
     pub rev: FlakeRev,
-    #[serde(default)]
-    pub last_modified: Option<DateTime<FixedOffset>>,
-    #[serde(default)]
-    pub etag: Option<String>,
 }
 
 impl Flake {
-    pub async fn new(owner: &str, name: &str, branch: &str) -> anyhow::Result<Self> {
-        match github::fetch_latest_rev(owner, name, branch, None, None).await {
-            Ok(github::ApiBranchResponse::Ok {
-                last_modified,
-                sha,
-                etag,
-            }) => Ok(Self {
-                owner: owner.to_string(),
-                name: name.to_string(),
-                branch: branch.to_string(),
-                last_modified,
-                etag,
-                rev: FlakeRev::Specific(sha),
-            }),
-            Err(e) => {
-                warn!(
-                    "failed to fetch latest rev: '{}'. Trying to fall back to cached options",
-                    e
-                );
-                Ok(Self {
-                    owner: owner.to_string(),
-                    name: name.to_string(),
-                    branch: branch.to_string(),
-                    last_modified: None,
-                    etag: None,
-                    rev: FlakeRev::FallbackToCached,
-                })
-            }
-            _ => unreachable!("cannot get a 304 here"),
+    pub fn new(
+        owner: impl ToString,
+        name: impl ToString,
+        branch: impl ToString,
+        rev: FlakeRev,
+    ) -> Self {
+        Self {
+            owner: owner.to_string(),
+            name: name.to_string(),
+            branch: branch.to_string(),
+            rev,
         }
     }
 
@@ -165,26 +154,45 @@ impl Flake {
         )
     }
 
-    pub async fn get_newest_from_github(&mut self) -> anyhow::Result<()> {
-        if let github::ApiBranchResponse::Ok {
-            last_modified,
-            sha,
-            etag,
-        } = github::fetch_latest_rev(
-            &self.owner,
-            &self.name,
-            &self.branch,
-            self.last_modified,
-            self.etag.clone(),
-        )
-        .await?
-        {
-            self.last_modified = last_modified;
-            self.etag = etag;
-            self.rev = FlakeRev::Specific(sha);
+    pub async fn fetch_latest_rev(
+        branch: impl ToString + std::fmt::Display,
+    ) -> anyhow::Result<FlakeRev> {
+        let mut headers = HeaderMap::new();
+        headers.insert("Accept", "application/json".parse()?);
+        let client = Client::builder().default_headers(headers).build()?;
+
+        let evals = client
+            .get(format!(
+                "{HYDRA_BASE_URL}/jobset/flyingcircus/{}/evals",
+                branch
+            ))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let evals = {
+            let tmp: ChannelEvalOverview = serde_json::from_str(&evals)?;
+            let mut evals = tmp.evals;
+            evals.sort_unstable_by_key(|x| x.id);
+            evals.reverse();
+            evals
         };
 
-        Ok(())
+        evals
+            .first()
+            .ok_or(anyhow::anyhow!("not enough evaluations for that job"))?
+            .jobsetevalinputs
+            .get("fc")
+            .map(|input| {
+                FlakeRev::Specific(
+                    input
+                        .clone()
+                        .revision
+                        .expect("expected every fc-nixos input to provide a commit revision"),
+                )
+            })
+            .ok_or(anyhow::anyhow!("no input called fc in response from hydra"))
     }
 }
 
@@ -216,47 +224,15 @@ pub async fn get_fcio_flake_uris() -> anyhow::Result<Vec<Flake>> {
         .sorted()
         .collect();
 
-    let mut branches: Vec<String> = Vec::new();
+    let mut flakes: Vec<Flake> = Vec::new();
 
-    for jobset_id in jobsets {
-        let jobset = client
-            .get(format!("{HYDRA_BASE_URL}/jobset/{project_id}/{jobset_id}"))
-            .send()
-            .await?
-            .text()
-            .await?;
-
-        let jobset: Jobset = serde_json::from_str(&jobset).unwrap();
-
-        match jobset.inputs.get("fc") {
-            Some(input) => {
-                let (repo, branch) = input
-                    .value
-                    .split_once(' ')
-                    .expect("value does not have scheme `uri branch`");
-
-                // TODO error handling?
-                assert_eq!(repo, "https://github.com/flyingcircusio/fc-nixos");
-                branches.push(branch.to_string());
-            }
-            _ => {
-                if let Some(nixpkgs) = jobset.inputs.get("nixpkgs") {
-                    warn!("jobset with nixpkgs {:?} has no input fc", nixpkgs.value);
-                }
-            }
+    for jobset in jobsets {
+        debug!("fetching latest rev for '{}'", jobset);
+        if let Ok(rev) = Flake::fetch_latest_rev(jobset).await {
+            flakes.push(Flake::new("flyingcircusio", "fc-nixos", jobset, rev));
         }
-    }
-
-    // index newest branches first to circumvent rate limits when indexing the more important newer branches
-    branches.sort();
-    branches.reverse();
-
-    // only keep the newest 9 branches => 3 channels (dev, staging + prod each)
-    branches.truncate(3 * 3);
-
-    let mut flakes = Vec::new();
-    for branch in branches.into_iter() {
-        flakes.push(Flake::new("flyingcircusio", "fc-nixos", &branch).await?);
+        // don't spam the hydra api
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     }
 
     info!(

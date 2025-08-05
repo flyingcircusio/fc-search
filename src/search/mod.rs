@@ -131,12 +131,14 @@ impl ChannelSearcher {
     #[tracing::instrument(skip(self), fields(branch = self.flake.branch))]
     pub async fn update(&mut self) -> anyhow::Result<()> {
         let active = self.active();
+
         let mut new_flake = self.flake.clone();
 
-        match new_flake.get_newest_from_github().await {
-            Ok(_) if active && new_flake.rev != self.flake.rev => {
+        match Flake::fetch_latest_rev(self.flake.branch.clone()).await {
+            Ok(rev) if active && rev != self.flake.rev => {
                 info!("current rev is {:?}", self.flake.rev);
-                info!("found newer revision: {:?}", new_flake.rev);
+                info!("found newer revision: {:?}", rev);
+                new_flake.rev = rev;
 
                 match update_file_cache(&self.branch_path, &new_flake) {
                     Ok((options, packages)) => {
@@ -156,17 +158,23 @@ impl ChannelSearcher {
                 }
             }
 
-            Ok(_) if !active => match update_file_cache(&self.branch_path, &new_flake) {
-                Ok((options, packages)) => {
-                    info!("successfully updated file cache");
-                    let inner =
-                        ChannelSearcherInner::new_with_values(&self.branch_path, options, packages);
+            Ok(rev) if !active => {
+                new_flake.rev = rev;
+                match update_file_cache(&self.branch_path, &new_flake) {
+                    Ok((options, packages)) => {
+                        info!("successfully updated file cache");
+                        let inner = ChannelSearcherInner::new_with_values(
+                            &self.branch_path,
+                            options,
+                            packages,
+                        );
 
-                    self.flake = new_flake;
-                    self.inner = inner;
+                        self.flake = new_flake;
+                        self.inner = inner;
+                    }
+                    Err(e) => error!("error updating branch: {}", e),
                 }
-                Err(e) => error!("error updating branch: {}", e),
-            },
+            }
             Ok(_) => info!("already up-to-date"),
             Err(e) => error!("error getting the newest commit: {}", e),
         }
