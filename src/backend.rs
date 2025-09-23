@@ -134,7 +134,7 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
 
     let updater_channels = state.channels.clone();
     // run update loop in the background
-    let updater_handle = tokio::spawn(async move {
+    let updater_handle = tokio::task::spawn_blocking(async move || {
         let mut interval = interval(Duration::from_hours(1));
         // the first tick completes immediately
         interval.tick().await;
