@@ -143,29 +143,42 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
             interval.tick().await;
 
             if let Ok(upstream_flakes) = get_fcio_flake_uris().await {
-                let channels: HashMap<String, RwLock<ChannelSearcher>> = updater_channels
-                    .read()
-                    .unwrap()
-                    .iter()
-                    .map(|(x, y)| (x.clone(), y.clone().into()))
-                    .collect();
+                // get a copy to prevent locking the data structure during the update of
+                // individual channels
+                let channels: HashMap<String, ChannelSearcher> =
+                    updater_channels.read().unwrap().clone();
 
-                // update existing channels
-                for (branch, searcher) in &channels {
-                    update_channel(branch, searcher).await;
+                let indexed_channels: Vec<String> = channels.keys().cloned().collect();
+
+                // update existing channels one by one
+                for (branch, mut searcher) in channels.into_iter() {
+                    info!("starting update for branch {}", branch);
+                    match searcher.update().await {
+                        Err(e) => error!("error updating branch {}: {e:?}", branch),
+                        Ok(()) => {
+                            // update the shared data structure with the updated channel
+                            // the write lock is released right after the update due to being
+                            // dropped
+                            updater_channels
+                                .write()
+                                .unwrap()
+                                .insert(branch.to_string(), searcher.clone());
+                        }
+                    }
                 }
 
-                // initialise possibly missing channels, they will be updated on the next run
-                for flake in upstream_flakes {
+                // initialise possibly missing channels
+                for flake in upstream_flakes
+                    .into_iter()
+                    .filter(|f| !indexed_channels.contains(&f.branch))
+                {
                     // index new branches
-                    if !channels.contains_key(&flake.branch) {
-                        let searcher = ChannelSearcher::in_statedir(&state.state_dir, &flake);
+                    let searcher = ChannelSearcher::in_statedir(&state.state_dir, &flake);
 
-                        updater_channels
-                            .write()
-                            .unwrap()
-                            .insert(flake.branch, searcher);
-                    }
+                    updater_channels
+                        .write()
+                        .unwrap()
+                        .insert(flake.branch, searcher);
                 }
             }
         }
@@ -404,24 +417,6 @@ where
                 format!("Failed to render template. Error: {}", err),
             )
                 .into_response(),
-        }
-    }
-}
-
-async fn update_channel(branch: &str, channel: &RwLock<ChannelSearcher>) {
-    // obtain the current searcher
-    let mut cs: ChannelSearcher = channel.read().unwrap().clone();
-
-    // no lock on the channel searcher here, so we can update it
-    // and replace the value on success while search is still running
-    // in an error case the old status is retained and the error logged
-    info!("starting update for branch {}", branch);
-    match cs.update().await {
-        Err(e) => error!("error updating branch {}: {e:?}", branch),
-        Ok(()) => {
-            // replace the old searcher with the updated one on success
-            let mut old = channel.write().unwrap();
-            *old = cs;
         }
     }
 }

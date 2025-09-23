@@ -131,7 +131,6 @@ impl ChannelSearcher {
     #[tracing::instrument(skip(self), fields(branch = self.flake.branch))]
     pub async fn update(&mut self) -> anyhow::Result<()> {
         let active = self.active();
-
         let mut new_flake = self.flake.clone();
 
         match Flake::fetch_latest_rev(self.flake.branch.clone()).await {
@@ -140,9 +139,9 @@ impl ChannelSearcher {
                 info!("found newer revision: {:?}", rev);
                 new_flake.rev = rev;
 
-                match update_file_cache(&self.branch_path, &new_flake) {
-                    Ok((options, packages)) => {
-                        info!("successfully updated file cache");
+                let (options, packages) = nix::build_options_for_fcio_branch(&new_flake)?;
+                match update_file_cache(&self.branch_path, &new_flake, &options, &packages) {
+                    Ok(()) => {
                         let Some(ref mut i) = &mut self.inner else {
                             unreachable!("channel searcher is active but inner is not some");
                         };
@@ -160,8 +159,9 @@ impl ChannelSearcher {
 
             Ok(rev) if !active => {
                 new_flake.rev = rev;
-                match update_file_cache(&self.branch_path, &new_flake) {
-                    Ok((options, packages)) => {
+                let (options, packages) = nix::build_options_for_fcio_branch(&new_flake)?;
+                match update_file_cache(&self.branch_path, &new_flake, &options, &packages) {
+                    Ok(()) => {
                         info!("successfully updated file cache");
                         let inner = ChannelSearcherInner::new_with_values(
                             &self.branch_path,
@@ -305,10 +305,9 @@ pub trait Searcher {
 pub fn update_file_cache(
     branch_path: &Path,
     flake: &Flake,
-) -> anyhow::Result<(
-    HashMap<String, NaiveNixosOption>,
-    HashMap<String, NixPackage>,
-)> {
+    options: &HashMap<String, NaiveNixosOption>,
+    packages: &HashMap<String, NixPackage>,
+) -> anyhow::Result<()> {
     let options_index_path = branch_path.join("tantivy");
     let pkgs_index_path = branch_path.join("tantivy_packages");
 
@@ -317,7 +316,6 @@ pub fn update_file_cache(
     std::fs::create_dir_all(pkgs_index_path.clone())
         .context("failed to create packages index path")?;
 
-    let (options, packages) = nix::build_options_for_fcio_branch(flake)?;
     std::fs::write(
         branch_path.join("options.json"),
         serde_json::to_string(&options).expect("failed to serialize naive options"),
@@ -336,6 +334,6 @@ pub fn update_file_cache(
     )
     .expect("failed to save flake info");
 
-    info!("successfully rebuilt options, packages + index");
-    Ok((options, packages))
+    info!("successfully saved options + packages to disk");
+    Ok(())
 }
