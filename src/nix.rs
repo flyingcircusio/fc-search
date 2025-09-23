@@ -147,6 +147,19 @@ pub fn build_options_for_fcio_branch(
     HashMap<String, NaiveNixosOption>,
     HashMap<String, NixPackage>,
 )> {
+    {
+        // validate that the provided flake is in fact a flake
+        let check_command = Command::new("nix")
+            .args(["flake", "metadata", &flake.flake_uri()])
+            .status()
+            .expect("failed to execute child process");
+
+        if !check_command.success() {
+            tracing::warn!("branch {} does not contain a flake.nix file", flake.branch);
+            anyhow::bail!("failed to fetch flake metadata");
+        }
+    }
+
     let eval_nixfile = {
         let data = NixFiles::get("eval.nix").unwrap().data;
         let mut tmp = tempfile::NamedTempFile::new()?;
