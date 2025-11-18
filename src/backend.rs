@@ -17,9 +17,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
-    time::Duration,
 };
-use tokio::time::interval;
 use tracing::{debug, error, info};
 
 #[derive(Clone)]
@@ -134,15 +132,15 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
 
     let updater_channels = state.channels.clone();
     // run update loop in the background
-    let updater_handle = tokio::task::spawn_blocking(async move || {
-        let mut interval = interval(Duration::from_hours(1));
-        // the first tick completes immediately
-        interval.tick().await;
+    let handle = tokio::runtime::Handle::current();
+    let updater_thread = std::thread::spawn(move || {
+        let sleep_time = std::time::Duration::from_hours(1);
 
         loop {
-            interval.tick().await;
+            std::thread::sleep(sleep_time);
 
-            if let Ok(upstream_flakes) = get_fcio_flake_uris().await {
+            let flake_uris = handle.block_on(async { get_fcio_flake_uris().await });
+            if let Ok(upstream_flakes) = flake_uris {
                 // get a copy to prevent locking the data structure during the update of
                 // individual channels
                 let channels: HashMap<String, ChannelSearcher> =
@@ -153,7 +151,8 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
                 // update existing channels one by one
                 for (branch, mut searcher) in channels.into_iter() {
                     info!("starting update for branch {}", branch);
-                    match searcher.update().await {
+                    let result = handle.block_on(async { searcher.update().await });
+                    match result {
                         Err(e) => error!("error updating branch {}: {e:?}", branch),
                         Ok(()) => {
                             // update the shared data structure with the updated channel
@@ -189,7 +188,7 @@ pub async fn run(port: u16, state_dir: &Path) -> anyhow::Result<()> {
         .context("error while starting server")
         .map(|_| ())
         .inspect_err(|_| {
-            updater_handle.abort();
+            updater_thread.join().unwrap();
         })
 }
 
