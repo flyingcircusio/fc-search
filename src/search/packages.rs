@@ -13,7 +13,7 @@ impl Searcher for GenericSearcher<NixPackage> {
     type Item = NixPackage;
 
     fn parse_query(&self, query_string: &str) -> Box<dyn Query> {
-        let attribute_name = self.inner.schema.get_field("attribute_name").unwrap();
+        let name_field = self.inner.schema.get_field("name").unwrap();
         let description = self.inner.schema.get_field("description").unwrap();
         let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
@@ -23,7 +23,7 @@ impl Searcher for GenericSearcher<NixPackage> {
 
             let qlen = word.len();
 
-            let name_term = Term::from_field_text(attribute_name, word);
+            let name_term = Term::from_field_text(name_field, word);
             let description_term = Term::from_field_text(description, word);
 
             // search for exact fit on the name field, highest priority
@@ -39,7 +39,7 @@ impl Searcher for GenericSearcher<NixPackage> {
             ));
 
             // search for possible regex matches on the name field
-            if let Ok(regex_query) = RegexQuery::from_pattern(query_string, attribute_name) {
+            if let Ok(regex_query) = RegexQuery::from_pattern(query_string, name_field) {
                 subqueries.push((
                     Occur::Should,
                     Box::new(BoostQuery::new(Box::new(regex_query), 1.2 * length_loss)),
@@ -47,13 +47,11 @@ impl Searcher for GenericSearcher<NixPackage> {
             }
 
             // fuzzily search on the name field
-            if qlen > 1 {
-                let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 0, true);
-                subqueries.push((
-                    Occur::Should,
-                    Box::new(BoostQuery::new(Box::new(fq), 1.1 * length_loss)),
-                ));
-            }
+            let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 2, true);
+            subqueries.push((
+                Occur::Should,
+                Box::new(BoostQuery::new(Box::new(fq), 1.1 * length_loss)),
+            ));
 
             if qlen > 2 {
                 let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 1, true);
@@ -91,7 +89,7 @@ impl Searcher for GenericSearcher<NixPackage> {
     fn schema() -> (tantivy::schema::Field, tantivy::schema::Schema) {
         let mut schema_builder = Schema::builder();
 
-        let raw_stored = TextOptions::default()
+        let name_field_options = TextOptions::default()
             .set_indexing_options(
                 TextFieldIndexing::default()
                     .set_index_option(tantivy::schema::IndexRecordOption::WithFreqsAndPositions)
@@ -99,7 +97,11 @@ impl Searcher for GenericSearcher<NixPackage> {
             )
             .set_stored();
 
-        let attribute_name = schema_builder.add_text_field("attribute_name", raw_stored);
+        let attribute_name = schema_builder.add_text_field(
+            "attribute_name",
+            TextOptions::default().set_fast(None).set_stored(),
+        );
+        schema_builder.add_text_field("name", name_field_options);
         schema_builder.add_text_field("description", TEXT);
         let schema = schema_builder.build();
 
@@ -112,6 +114,7 @@ impl Searcher for GenericSearcher<NixPackage> {
         let mut index_writer = index.writer(50_000_000)?;
 
         let attribute_name = self.inner.reference_field;
+        let name = schema.get_field("name").expect("name field should exist");
         let description = schema
             .get_field("description")
             .expect("the field description should exist");
@@ -125,14 +128,16 @@ impl Searcher for GenericSearcher<NixPackage> {
             .run(entries.iter().map(|(aname, package)| {
                 tantivy::indexer::UserOperation::Add(doc! {
                     attribute_name => aname.clone(),
+                    name => package.name.clone(),
                     description => package.description.clone().unwrap_or_default()
                 })
             }))
             .unwrap();
-        index_writer.commit()?;
 
+        index_writer.commit()?;
         self.map = entries;
         self.inner.reader.reload().unwrap();
+
         Ok(())
     }
 
@@ -149,5 +154,36 @@ impl Searcher for GenericSearcher<NixPackage> {
                 (score, 1. / attribute_name.len() as f32)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_search() {
+        let tmp = tempdir().unwrap();
+        let mut searcher = GenericSearcher::<NixPackage>::new(&tmp.path());
+
+        let mut entries = HashMap::new();
+        let entry = NixPackage {
+            attribute_name: "gitlab-workhorse".to_string(),
+            default_output: "".to_string(),
+            description: None,
+            long_description: None,
+            license: crate::nix::Plurality::None,
+            name: "gitlab-workhorse".to_string(),
+            outputs: vec![],
+            version: None,
+            homepage: crate::nix::Plurality::None,
+        };
+
+        entries.insert("gitlab-workhorse".to_string(), entry.clone());
+        searcher.update_entries(entries).unwrap();
+
+        let results = searcher.search_entries("gitlab-wrkhorse", 10, 1);
+        assert_eq!(results, vec![entry]);
     }
 }

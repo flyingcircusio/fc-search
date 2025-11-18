@@ -235,7 +235,6 @@ mod test {
             read_only: false,
         };
         entries.insert("foo".to_string(), entry.clone());
-
         searcher.update_entries(entries).unwrap();
 
         let results = searcher.search_entries("foo", 10, 1);

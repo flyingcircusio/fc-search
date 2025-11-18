@@ -85,7 +85,7 @@ impl NixHtml for License {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone, Default)]
+#[derive(Deserialize, Debug, Serialize, Clone, Default, PartialEq)]
 #[serde(untagged)]
 pub enum Plurality<T> {
     #[default]
@@ -120,7 +120,7 @@ impl<T: Serialize> Display for Plurality<T> {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
+#[derive(Deserialize, Debug, Serialize, Clone, PartialEq)]
 pub struct NixPackage {
     pub attribute_name: String,
     pub default_output: String,
