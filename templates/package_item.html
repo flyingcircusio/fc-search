@@ -1,6 +1,5 @@
 {% for item in results %}
 <li class="my-4 p-4 border border-1 rounded-md">
-
     <p class="font-bold py-1 text-fc-green text-lg">{{ item.attribute_name }}</p>
 
     {% if item.description.is_some() %}
@@ -29,6 +28,6 @@
     </div>
 </li>
 {% endfor %}
-{% if results.len() >  0 %}
+{% if has_next_page %}
 {% include "pagination.html" %}
 {% endif %}

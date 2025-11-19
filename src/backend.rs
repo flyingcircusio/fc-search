@@ -312,7 +312,9 @@ async fn search_packages_handler(
 
     let has_next_page = search_results.len() > form.n_items as usize;
     // remove the last element since it contains one more than requested
-    let _ = search_results.pop();
+    if has_next_page {
+        let _ = search_results.pop();
+    }
 
     if headers.contains_key("HX-Request") {
         let template = PackageItemTemplate {
