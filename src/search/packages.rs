@@ -47,17 +47,17 @@ impl Searcher for GenericSearcher<NixPackage> {
             }
 
             // fuzzily search on the name field
-            let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 2, true);
+            let fq = FuzzyTermQuery::new(name_term.clone(), 2, true);
             subqueries.push((
                 Occur::Should,
-                Box::new(BoostQuery::new(Box::new(fq), 1.1 * length_loss)),
+                Box::new(BoostQuery::new(Box::new(fq), 0.9 * length_loss)),
             ));
 
             if qlen > 2 {
-                let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 1, true);
+                let fq = FuzzyTermQuery::new(name_term.clone(), 1, true);
                 subqueries.push((
                     Occur::Should,
-                    Box::new(BoostQuery::new(Box::new(fq), length_loss)),
+                    Box::new(BoostQuery::new(Box::new(fq), 1.2 * length_loss)),
                 ));
             }
 
