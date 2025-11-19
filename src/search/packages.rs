@@ -18,15 +18,12 @@ impl Searcher for GenericSearcher<NixPackage> {
         let mut subqueries: Vec<(Occur, Box<dyn Query>)> = vec![];
 
         for (i, word) in query_string.split(' ').enumerate() {
-            // words further back in the query get assigned less importance
+            // words further back in the query get less weight for the overall query
             let length_loss = 1. - i as f32 / 10.;
-
-            let qlen = word.len();
-
             let name_term = Term::from_field_text(name_field, word);
             let description_term = Term::from_field_text(description, word);
 
-            // search for exact fit on the name field, highest priority
+            // exact fit on the name field, highest weighting
             subqueries.push((
                 Occur::Should,
                 Box::new(BoostQuery::new(
@@ -34,35 +31,38 @@ impl Searcher for GenericSearcher<NixPackage> {
                         name_term.clone(),
                         tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
                     )),
-                    1.3,
+                    1.4,
                 )),
             ));
 
-            // search for possible regex matches on the name field
-            if let Ok(regex_query) = RegexQuery::from_pattern(query_string, name_field) {
+            // possible regex matches on the name field
+            if let Ok(regex_query) =
+                RegexQuery::from_pattern(&format!("{}", query_string), name_field)
+            {
                 subqueries.push((
                     Occur::Should,
-                    Box::new(BoostQuery::new(Box::new(regex_query), 1.2 * length_loss)),
+                    Box::new(BoostQuery::new(Box::new(regex_query), 1.3 * length_loss)),
                 ));
             }
 
-            // fuzzily search on the name field
-            let fq = FuzzyTermQuery::new(name_term.clone(), 2, true);
+            // prefix matches on the name field, allow one typo
+            let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 1, true);
             subqueries.push((
                 Occur::Should,
-                Box::new(BoostQuery::new(Box::new(fq), 0.9 * length_loss)),
+                Box::new(BoostQuery::new(Box::new(fq), 1.2 * length_loss)),
             ));
 
-            if qlen > 2 {
-                let fq = FuzzyTermQuery::new(name_term.clone(), 1, true);
+            // simulated prefix/infix/suffix query on the name
+            if let Ok(regex_query) =
+                RegexQuery::from_pattern(&format!(".*{}.*", query_string), name_field)
+            {
                 subqueries.push((
                     Occur::Should,
-                    Box::new(BoostQuery::new(Box::new(fq), 1.2 * length_loss)),
+                    Box::new(BoostQuery::new(Box::new(regex_query), 1.1 * length_loss)),
                 ));
             }
 
-            // search for exact fit on the description field
-            // similar priority to a fuzzy search on the name field
+            // exact term in the description
             subqueries.push((
                 Occur::Should,
                 Box::new(BoostQuery::new(
@@ -70,17 +70,23 @@ impl Searcher for GenericSearcher<NixPackage> {
                         description_term.clone(),
                         tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
                     )),
-                    1.2 * length_loss,
+                    length_loss,
                 )),
             ));
 
-            if qlen > 2 {
-                let fq = FuzzyTermQuery::new_prefix(description_term.clone(), 1, true);
-                subqueries.push((
-                    Occur::Should,
-                    Box::new(BoostQuery::new(Box::new(fq), length_loss)),
-                ));
-            }
+            // term match in the name with a distance of two
+            let fq = FuzzyTermQuery::new_prefix(name_term.clone(), 2, true);
+            subqueries.push((
+                Occur::Should,
+                Box::new(BoostQuery::new(Box::new(fq), 0.9 * length_loss)),
+            ));
+
+            // fuzzy match in the description
+            let fq = FuzzyTermQuery::new(description_term.clone(), 1, true);
+            subqueries.push((
+                Occur::Should,
+                Box::new(BoostQuery::new(Box::new(fq), length_loss)),
+            ));
         }
 
         Box::new(BooleanQuery::new(subqueries))
@@ -160,10 +166,10 @@ impl Searcher for GenericSearcher<NixPackage> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use itertools::Itertools;
     use tempfile::tempdir;
 
-    #[test]
-    fn test_search() {
+    fn prep_searcher() -> GenericSearcher<NixPackage> {
         let tmp = tempdir().unwrap();
         let mut searcher = GenericSearcher::<NixPackage>::new(&tmp.path());
 
@@ -182,8 +188,34 @@ mod test {
 
         entries.insert("gitlab-workhorse".to_string(), entry.clone());
         searcher.update_entries(entries).unwrap();
+        searcher
+    }
 
-        let results = searcher.search_entries("gitlab-wrkhorse", 10, 1);
-        assert_eq!(results, vec![entry]);
+    #[test]
+    fn test_exact_search() {
+        let searcher = prep_searcher();
+        let results = searcher.search_entries("gitlab-workhorse", 10, 1);
+        assert_eq!(results, searcher.map.values().cloned().collect_vec())
+    }
+
+    #[test]
+    fn test_prefix_search() {
+        let searcher = prep_searcher();
+        let results = searcher.search_entries("gitlab-", 10, 1);
+        assert_eq!(results, searcher.map.values().cloned().collect_vec())
+    }
+
+    #[test]
+    fn test_infix_search() {
+        let searcher = prep_searcher();
+        let results = searcher.search_entries("lab-work", 10, 1);
+        assert_eq!(results, searcher.map.values().cloned().collect_vec())
+    }
+
+    #[test]
+    fn test_suffix_search() {
+        let searcher = prep_searcher();
+        let results = searcher.search_entries("workhorse", 10, 1);
+        assert_eq!(results, searcher.map.values().cloned().collect_vec())
     }
 }
